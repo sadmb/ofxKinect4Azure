@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup>
+		<ClCompile Include="src\ofApp.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+		<ClCompile Include="src\main.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+		<ClCompile Include="src\main.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+		<ClCompile Include="src\ofApp.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+		<ClCompile Include="..\..\..\addons\ofxKinect4Azure\src\ofxKinect4Azure.cpp">
+			<Filter>addons\ofxKinect4Azure\src</Filter>
+		</ClCompile>
+	</ItemGroup>
+	<ItemGroup>
+		<Filter Include="src">
+			<UniqueIdentifier>{d8376475-7454-4a24-b08a-aac121d3ad6f}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons">
+			<UniqueIdentifier>{71834F65-F3A9-211E-73B8-DC85}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure">
+			<UniqueIdentifier>{3D54BE35-5047-2133-C206-4BC8}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure\src">
+			<UniqueIdentifier>{34F696CC-2E54-A0E7-9FCC-64DD}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure\libs">
+			<UniqueIdentifier>{3E25B3DD-86E6-1E7E-0BE3-9723}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure\libs\include">
+			<UniqueIdentifier>{1BC5023E-290F-5C7C-E1EA-4009}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure\libs\include\k4a">
+			<UniqueIdentifier>{04B7D11B-3051-7B46-6CC8-31A9}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure\libs\include\k4abt">
+			<UniqueIdentifier>{EB359768-B635-7902-42A2-7D3E}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxKinect4Azure\libs\include\k4arecord">
+			<UniqueIdentifier>{319664A2-A6C5-2814-4999-4421}</UniqueIdentifier>
+		</Filter>
+	</ItemGroup>
+	<ItemGroup>
+		<ClInclude Include="src\ofApp.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="src\ofApp.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\src\ofxKinect4Azure.h">
+			<Filter>addons\ofxKinect4Azure\src</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\src\ofxKinect4AzureSettings.h">
+			<Filter>addons\ofxKinect4Azure\src</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4a\k4a.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4a</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4a\k4a.hpp">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4a</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4a\k4atypes.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4a</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4a\k4aversion.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4a</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4a\k4a_export.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4a</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4abt\k4abt.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4abt</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4abt\k4abttypes.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4abt</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4arecord\k4arecord_export.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4arecord</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4arecord\playback.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4arecord</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4arecord\record.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4arecord</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxKinect4Azure\libs\include\k4arecord\types.h">
+			<Filter>addons\ofxKinect4Azure\libs\include\k4arecord</Filter>
+		</ClInclude>
+	</ItemGroup>
+	<ItemGroup>
+		<ResourceCompile Include="icon.rc" />
+	</ItemGroup>
+</Project>
