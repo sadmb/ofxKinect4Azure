@@ -3,6 +3,23 @@
 //--------------------------------------------------------------
 void ofxKinect4Azure::setup()
 {
+	setup(0);
+}
+
+//--------------------------------------------------------------
+void ofxKinect4Azure::setup(ofxKinect4AzureSettings settings)
+{
+	setup(0, settings);
+}
+
+void ofxKinect4Azure::setup(int index)
+{
+	device_count = k4a::device::get_installed_count();
+	if (device_count == 0)
+	{
+		ofLogError("ofxKinect4Azure") << "No Azure Kinect devices detected.";
+	}
+	settings = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
 	settings.camera_fps = K4A_FRAMES_PER_SECOND_30;
 	settings.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
 	settings.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
@@ -10,20 +27,34 @@ void ofxKinect4Azure::setup()
 
 	settings.synchronized_images_only = true;
 
-	setup(settings);
-
+	setup(index, settings);
 }
 
+
 //--------------------------------------------------------------
-void ofxKinect4Azure::setup(ofxKinect4AzureSettings settings)
+void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
 {
-	if (device_count > 0)
+	device_count = k4a::device::get_installed_count();
+	if (device_count == 0)
+	{
+		ofLogError("ofxKinect4Azure") << "No Azure Kinect devices detected.";
+	}
+	if (device_count > index)
 	{
 		ofLogNotice("ofxKinect4Azure") << "Started opening Kinect4Azure device...";
 
-		device = k4a::device::open(K4A_DEVICE_DEFAULT);
-		device.start_cameras(&settings);
-
+		if (k4a_device_open(index, &device) != K4A_WAIT_RESULT_SUCCEEDED)
+		{
+			ofLogError("ofxKinect4Azure") << "open Azure Kinect device failed!";
+			return;
+		}
+		if (k4a_device_start_cameras(device, &settings) != K4A_WAIT_RESULT_SUCCEEDED)
+		{
+			ofLogError("ofxKinect4Azure") << "can't start Kinect Azure camera.";
+			return;
+		}
+		k4a_device_get_calibration(device, settings.depth_mode, settings.color_resolution, &calibration);
+		device_index = index;
 		ofLogNotice("ofxKinect4Azure") << "Finished opening Kinect4Azure device.";
 
 		//if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
@@ -37,73 +68,132 @@ void ofxKinect4Azure::setup(ofxKinect4AzureSettings settings)
 		//	color.allocate((int)color_resolution.x, (int)color_resolution.y, GL_RGB);
 		//}
 	}
+	else
+	{
+		ofLogError("ofxKinect4Azure") << ofToString(index) << " is not the right index for Kinect4Azure device.";
+	}
 
 
 }
 
+void ofxKinect4Azure::saveCalibration(string filename)
+{
+	size_t size;
+	uint8_t* calibration_buffer;
+	k4a_device_get_raw_calibration(device, calibration_buffer, &size);
+	ofBuffer buffer;
+	buffer.append(reinterpret_cast<const char *>(&calibration_buffer[0]), (long)size);
+	ofBufferToFile(filename, buffer);
+	cout << "Calibration blob for device " << (int)device_index << " (serial no. " << get_serial(device)
+		<< ") is saved to " << filename << endl;
+}
+
 //--------------------------------------------------------------
 void ofxKinect4Azure::update(){
-	if (device_count > 0)
+	if (device_index >= 0)
 	{
-		k4a::capture capture;
-		if (device.get_capture(&capture, std::chrono::milliseconds(0)))
+		k4a_capture_t capture = nullptr;
+		if (k4a_device_get_capture(device, &capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 		{
-			const k4a::image depth_image = capture.get_depth_image();
-			const k4a::image color_image = capture.get_color_image();
-
+			ofLogError("ofxKinct4Azure") << "capture failed.";
+			return;
+		}
+		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
+		{
+			depth_image = k4a_capture_get_depth_image(capture);
 			const int depth_width = depth_image.get_width_pixels();
 			const int depth_height = depth_image.get_height_pixels();
+			depth_size = pair<int, int>(depth_width, depth_height);
+			is_depth_frame_new = true;
+		}
 
+		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
+		{
+			color_image = k4a_capture_get_color_image(capture);
 			const int color_width = color_image.get_width_pixels();
 			const int color_height = color_image.get_height_pixels();
-
-			ofPixels depth_pix;
-			const uint16_t* depth_data = reinterpret_cast<const uint16_t*>(depth_image.get_buffer());
-			ofVec2f range = getDepthModeRange(settings.depth_mode);
-			depth_pix.allocate(depth_width, depth_height, OF_PIXELS_BGRA);
-
-			for (int h = 0; h < depth_height; ++h)
-			{
-				for (int w = 0; w < depth_width; ++w)
-				{
-					const size_t current_pixel = static_cast<size_t>(h * depth_width + w);
-					depth_pix[current_pixel * 4] = ColorizeBlueToRed(depth_data[current_pixel], (unsigned short)range.x, (unsigned short)range.y).g;
-					depth_pix[current_pixel * 4 + 1] = ColorizeBlueToRed(depth_data[current_pixel], (unsigned short)range.x, (unsigned short)range.y).b;
-					depth_pix[current_pixel * 4 + 2] = ColorizeBlueToRed(depth_data[current_pixel], (unsigned short)range.x, (unsigned short)range.y).r;
-					depth_pix[current_pixel * 4 + 3] = ColorizeBlueToRed(depth_data[current_pixel], (unsigned short)range.x, (unsigned short)range.y).a;
-				}
-			}
-			depth.allocate(depth_pix);
-
-			ofPixels color_pix;
-			unsigned char* color_data = (unsigned char*)(color_image.get_buffer());
-			color_pix.setFromExternalPixels(color_data, color_width, color_height, OF_PIXELS_BGRA);
-			color.allocate(color_pix);
+			color_size = pair<int, int>(color_width, color_height);
+			is_frame_new = true;
 		}
 	}
 }
 
 //--------------------------------------------------------------
-void ofxKinect4Azure::draw(){
-	if (device_count > 0)
+void ofxKinect4Azure::draw(float x, float y, float w, float h)
+{
+	if (device_index >= 0)
 	{
-		ofPushStyle();
-		ofSetColor(255);
-		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
-		{
-			if (depth.isAllocated())
-			{
-				depth.draw(0, 0, depth.getWidth(), depth.getHeight());
-			}
-		}
 		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
 		{
+			if (is_frame_new)
+			{
+				is_frame_new = false;
+				ofPixels pix;
+				pix.setFromPixels((const unsigned char*)(color_image.get_buffer()), color_size.first, color_size.second, OF_PIXELS_BGRA);
+				color.allocate(pix);
+			}
+			ofVec2f resolution = getColorResolution(settings.color_resolution);
 			if (color.isAllocated())
 			{
-				color.draw(0, depth.getHeight() + 10, color.getWidth() * 0.5, color.getHeight() * 0.5);
+				if (w == 0)
+				{
+					w = resolution.x;
+				}
+				if (h == 0)
+				{
+					h = resolution.y;
+				}
+				ofPushStyle();
+				ofSetColor(255);
+				color.draw(x, y, w, h);
+				ofPopStyle();
 			}
 		}
-		ofPopStyle();
+	}
+}
+
+void ofxKinect4Azure::drawDepth(float x, float y, float w, float h)
+{
+	if (device_index >= 0)
+	{
+		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
+		{
+			if (is_depth_frame_new)
+			{
+				is_depth_frame_new = false;
+				ofPixels depth_pix;
+				ofVec2f range = getDepthModeRange(settings.depth_mode);
+				depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
+				for (int h = 0; h < depth_size.second; ++h)
+				{
+					for (int w = 0; w < depth_size.first; ++w)
+					{
+						const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
+						ofColor colorized = ColorizeBlueToRed(reinterpret_cast<const unsigned short*>(depth_image.get_buffer())[current_pixel], range.x, range.y);
+						depth_pix[current_pixel * 4] = colorized.g;
+						depth_pix[current_pixel * 4 + 1] = colorized.b;
+						depth_pix[current_pixel * 4 + 2] = colorized.r;
+						depth_pix[current_pixel * 4 + 3] = colorized.a;
+					}
+				}
+				depth.allocate(depth_pix);
+			}
+			if (depth.isAllocated())
+			{
+				if (w == 0)
+				{
+					w = depth_size.first;
+				}
+				if (h == 0)
+				{
+					h = depth_size.second;
+				}
+				ofPushStyle();
+				ofSetColor(255);
+				depth.draw(x, y, w, h);
+				ofPopStyle();
+			}
+		}
 	}
 }
 
