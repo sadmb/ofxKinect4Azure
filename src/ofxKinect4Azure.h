@@ -11,17 +11,26 @@ public:
 	k4a_device_t device;
 	k4a_calibration_t calibration;
 	k4a_transformation_t transformation;
+	enum OFX_K4A_TRANSFORM_TYPE {
+		NONE,
+		COLOR_TO_DEPTH,
+		DEPTH_TO_COLOR
+	}transform_type=NONE;
 
 	pair<int, int> color_size, depth_size;
 
 	ofPixels pix;
-	ofPixels depth_pix;
+	ofShortPixels depth_pix;
+	ofPixels colorized_depth_pix;
 
 	ofTexture color;
 	ofTexture depth;
+	ofTexture colorized_depth;
 	
 	bool is_frame_new = false;
 	bool is_depth_frame_new = false;
+	bool b_tex_new = false;
+	bool b_depth_tex_new = false;
 	bool b_able_depth_to_color = false;
 
 	int device_index = -1;
@@ -58,10 +67,26 @@ public:
 	void saveCalibration(string filename = "calibration.json");
 	void update();
 	void draw(float x = 0, float y = 0, float w = 0, float h = 0);
-	void drawDepth(float x = 0, float y = 0, float w = 0, float h = 0);
-	void enableDepthToColor() { b_able_depth_to_color = true; }
-	void disableDepthToColor() { b_able_depth_to_color = false; }
+	void drawColorizedDepth(float x = 0, float y = 0, float w = 0, float h = 0);
 
+	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { transform_type = _transform_type; }
+
+	ofPixels& getPixels() { return pix; }
+	ofShortPixels& getDepthPixels() { return depth_pix; }
+	ofTexture& getTexture() {
+		if (!b_tex_new) {
+			color.allocate(pix);
+			b_tex_new = true;
+		}
+		return color;
+	}
+	ofTexture& getDepthTexture() { 
+		if (!b_depth_tex_new) {
+			depth.allocate(depth_pix);
+			b_depth_tex_new = true;
+		}
+		return depth;
+	}
 
 	ofVec2f getDepthModeRange(const k4a_depth_mode_t depth_mode)
 	{
