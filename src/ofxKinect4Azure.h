@@ -10,6 +10,7 @@ public:
 	ofxKinect4AzureSettings settings;
 	k4a_device_t device;
 	k4a_calibration_t calibration;
+	k4a_transformation_t transformation;
 
 	pair<int, int> color_size, depth_size;
 
@@ -21,6 +22,7 @@ public:
 	
 	bool is_frame_new = false;
 	bool is_depth_frame_new = false;
+	bool b_able_depth_to_color = false;
 
 	int device_index = -1;
 	int device_count = 0;
@@ -57,6 +59,9 @@ public:
 	void update();
 	void draw(float x = 0, float y = 0, float w = 0, float h = 0);
 	void drawDepth(float x = 0, float y = 0, float w = 0, float h = 0);
+	void enableDepthToColor() { b_able_depth_to_color = true; }
+	void disableDepthToColor() { b_able_depth_to_color = false; }
+
 
 	ofVec2f getDepthModeRange(const k4a_depth_mode_t depth_mode)
 	{

@@ -54,6 +54,7 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
 			return;
 		}
 		k4a_device_get_calibration(device, settings.depth_mode, settings.color_resolution, &calibration);
+		transformation = k4a_transformation_create(&calibration);
 		device_index = index;
 		ofLogNotice("ofxKinect4Azure") << "Finished opening Kinect4Azure device.";
 
