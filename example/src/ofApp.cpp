@@ -4,7 +4,6 @@
 void ofApp::setup(){
 	ofSetWindowTitle("ofxKinect4Azure example");
 	k4a.setup();
-
 	//setup with settings
 	//
 	//ofxKinect4AzureSettings settings;
@@ -15,6 +14,8 @@ void ofApp::setup(){
 	//settings.synchronized_images_only = true;
 	//
 	//k4a.setup(settings);
+
+	ofSetVerticalSync(false);
 }
 
 //--------------------------------------------------------------
@@ -26,6 +27,7 @@ void ofApp::update(){
 void ofApp::draw(){
 	k4a.draw(0, 0, 800, 450);
 	k4a.drawDepth(0, 460);
+	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
 
 //--------------------------------------------------------------
