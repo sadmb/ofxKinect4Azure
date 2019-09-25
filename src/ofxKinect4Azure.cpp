@@ -114,8 +114,19 @@ void ofxKinect4Azure::update(){
 		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
 		{
 			k4a_image_t depth_image = k4a_capture_get_depth_image(capture);
-			const int depth_width = k4a_image_get_width_pixels(depth_image);
-			const int depth_height = k4a_image_get_height_pixels(depth_image);
+			k4a_image_t* d_ptr;
+			if (b_able_depth_to_color) {
+				k4a_image_t transformed_depth_image;
+				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, color_size.first, color_size.second, color_size.first * sizeof(unsigned short), &transformed_depth_image);
+				k4a_transformation_depth_image_to_color_camera(transformation, depth_image, transformed_depth_image);
+				d_ptr = &transformed_depth_image;
+				k4a_image_release(depth_image);
+			}
+			else {
+				d_ptr = &depth_image;
+			}
+			const int depth_width = k4a_image_get_width_pixels(*d_ptr);
+			const int depth_height = k4a_image_get_height_pixels(*d_ptr);
 			depth_size = pair<int, int>(depth_width, depth_height);
 			is_depth_frame_new = true;
 			ofVec2f range = getDepthModeRange(settings.depth_mode);
@@ -125,7 +136,7 @@ void ofxKinect4Azure::update(){
 				for (int w = 0; w < depth_size.first; ++w)
 				{
 					const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
-					uint8_t* d_buffer = k4a_image_get_buffer(depth_image);
+					uint8_t* d_buffer = k4a_image_get_buffer(*d_ptr);
 					ofColor colorized = ColorizeBlueToRed(reinterpret_cast<const unsigned short*>(d_buffer)[current_pixel], range.x, range.y);
 					depth_pix[current_pixel * 4] = colorized.g;
 					depth_pix[current_pixel * 4 + 1] = colorized.b;
@@ -134,7 +145,7 @@ void ofxKinect4Azure::update(){
 				}
 			}
 			depth.allocate(depth_pix);
-			k4a_image_release(depth_image);
+			k4a_image_release(*d_ptr);
 		}
 		k4a_capture_release(capture);
 	}
