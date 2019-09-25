@@ -10,13 +10,18 @@ public:
 	ofxKinect4AzureSettings settings;
 	k4a_device_t device;
 	k4a_calibration_t calibration;
-	k4a::image depth_image;
-	k4a::image color_image;
+
 	pair<int, int> color_size, depth_size;
-	ofTexture depth;
+
+	ofPixels pix;
+	ofPixels depth_pix;
+
 	ofTexture color;
+	ofTexture depth;
+	
 	bool is_frame_new = false;
 	bool is_depth_frame_new = false;
+
 	int device_index = -1;
 	int device_count = 0;
 

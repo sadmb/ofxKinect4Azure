@@ -98,23 +98,44 @@ void ofxKinect4Azure::update(){
 			ofLogError("ofxKinct4Azure") << "capture failed.";
 			return;
 		}
-		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
-		{
-			depth_image = k4a_capture_get_depth_image(capture);
-			const int depth_width = depth_image.get_width_pixels();
-			const int depth_height = depth_image.get_height_pixels();
-			depth_size = pair<int, int>(depth_width, depth_height);
-			is_depth_frame_new = true;
-		}
-
 		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
 		{
-			color_image = k4a_capture_get_color_image(capture);
-			const int color_width = color_image.get_width_pixels();
-			const int color_height = color_image.get_height_pixels();
+			k4a_image_t color_image = k4a_capture_get_color_image(capture);
+			const int color_width = k4a_image_get_width_pixels(color_image);
+			const int color_height = k4a_image_get_height_pixels(color_image);
 			color_size = pair<int, int>(color_width, color_height);
 			is_frame_new = true;
+			uint8_t* c_buffer = k4a_image_get_buffer(color_image);
+			pix.setFromPixels((const unsigned char*)(c_buffer), color_size.first, color_size.second, OF_PIXELS_BGRA);
+			color.allocate(pix);
+			k4a_image_release(color_image);
 		}
+		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
+		{
+			k4a_image_t depth_image = k4a_capture_get_depth_image(capture);
+			const int depth_width = k4a_image_get_width_pixels(depth_image);
+			const int depth_height = k4a_image_get_height_pixels(depth_image);
+			depth_size = pair<int, int>(depth_width, depth_height);
+			is_depth_frame_new = true;
+			ofVec2f range = getDepthModeRange(settings.depth_mode);
+			depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
+			for (int h = 0; h < depth_size.second; ++h)
+			{
+				for (int w = 0; w < depth_size.first; ++w)
+				{
+					const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
+					uint8_t* d_buffer = k4a_image_get_buffer(depth_image);
+					ofColor colorized = ColorizeBlueToRed(reinterpret_cast<const unsigned short*>(d_buffer)[current_pixel], range.x, range.y);
+					depth_pix[current_pixel * 4] = colorized.g;
+					depth_pix[current_pixel * 4 + 1] = colorized.b;
+					depth_pix[current_pixel * 4 + 2] = colorized.r;
+					depth_pix[current_pixel * 4 + 3] = colorized.a;
+				}
+			}
+			depth.allocate(depth_pix);
+			k4a_image_release(depth_image);
+		}
+		k4a_capture_release(capture);
 	}
 }
 
@@ -125,13 +146,6 @@ void ofxKinect4Azure::draw(float x, float y, float w, float h)
 	{
 		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
 		{
-			if (is_frame_new)
-			{
-				is_frame_new = false;
-				ofPixels pix;
-				pix.setFromPixels((const unsigned char*)(color_image.get_buffer()), color_size.first, color_size.second, OF_PIXELS_BGRA);
-				color.allocate(pix);
-			}
 			ofVec2f resolution = getColorResolution(settings.color_resolution);
 			if (color.isAllocated())
 			{
@@ -158,26 +172,6 @@ void ofxKinect4Azure::drawDepth(float x, float y, float w, float h)
 	{
 		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
 		{
-			if (is_depth_frame_new)
-			{
-				is_depth_frame_new = false;
-				ofPixels depth_pix;
-				ofVec2f range = getDepthModeRange(settings.depth_mode);
-				depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
-				for (int h = 0; h < depth_size.second; ++h)
-				{
-					for (int w = 0; w < depth_size.first; ++w)
-					{
-						const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
-						ofColor colorized = ColorizeBlueToRed(reinterpret_cast<const unsigned short*>(depth_image.get_buffer())[current_pixel], range.x, range.y);
-						depth_pix[current_pixel * 4] = colorized.g;
-						depth_pix[current_pixel * 4 + 1] = colorized.b;
-						depth_pix[current_pixel * 4 + 2] = colorized.r;
-						depth_pix[current_pixel * 4 + 3] = colorized.a;
-					}
-				}
-				depth.allocate(depth_pix);
-			}
 			if (depth.isAllocated())
 			{
 				if (w == 0)
