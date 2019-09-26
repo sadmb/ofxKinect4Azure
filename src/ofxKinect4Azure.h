@@ -4,6 +4,7 @@
 #include "k4a.hpp"
 #include "ofxKinect4AzureSettings.h"
 
+
 class ofxKinect4Azure {
 
 public:
@@ -11,17 +12,14 @@ public:
 	k4a_device_t device;
 	k4a_calibration_t calibration;
 	k4a_transformation_t transformation;
-	enum OFX_K4A_TRANSFORM_TYPE {
-		NONE,
-		COLOR_TO_DEPTH,
-		DEPTH_TO_COLOR
-	}transform_type=NONE;
+	k4a_imu_sample_t imu;
 
 	pair<int, int> color_size, depth_size;
 
 	ofPixels pix;
 	ofShortPixels depth_pix;
 	ofPixels colorized_depth_pix;
+	ofShortPixels pointcloud_pix;
 
 	ofTexture color;
 	ofTexture depth;
@@ -31,7 +29,6 @@ public:
 	bool is_depth_frame_new = false;
 	bool b_tex_new = false;
 	bool b_depth_tex_new = false;
-	bool b_able_depth_to_color = false;
 
 	int device_index = -1;
 	int device_count = 0;
@@ -69,10 +66,23 @@ public:
 	void draw(float x = 0, float y = 0, float w = 0, float h = 0);
 	void drawColorizedDepth(float x = 0, float y = 0, float w = 0, float h = 0);
 
-	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { transform_type = _transform_type; }
+	//set transform mode COLOR_TO_DEPTH or DEPTH_TO_COLOR or NONE
+	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { settings.transform_type = _transform_type; }
+
+	//set IMU able state 
+	void enableIMU() { 
+		k4a_device_start_imu(device);
+		settings.disable_imu = false; 
+	}
+	void disableIMU() { 
+		k4a_device_stop_imu(device);
+		settings.disable_imu = true;
+	}
 
 	ofPixels& getPixels() { return pix; }
 	ofShortPixels& getDepthPixels() { return depth_pix; }
+	ofShortPixels& getPointcloudPix() { return pointcloud_pix; }
+
 	ofTexture& getTexture() {
 		if (!b_tex_new) {
 			color.allocate(pix);

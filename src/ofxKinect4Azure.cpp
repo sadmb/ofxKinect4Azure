@@ -7,8 +7,9 @@ void ofxKinect4Azure::setup()
 }
 
 //--------------------------------------------------------------
-void ofxKinect4Azure::setup(ofxKinect4AzureSettings settings)
+void ofxKinect4Azure::setup(ofxKinect4AzureSettings _settings)
 {
+	settings = _settings;
 	setup(0, settings);
 }
 
@@ -19,25 +20,22 @@ void ofxKinect4Azure::setup(int index)
 	{
 		ofLogError("ofxKinect4Azure") << "No Azure Kinect devices detected.";
 	}
-	settings = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
-	settings.camera_fps = K4A_FRAMES_PER_SECOND_30;
-	settings.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
-	settings.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-	settings.color_resolution = K4A_COLOR_RESOLUTION_720P;
-
-	settings.synchronized_images_only = true;
 
 	setup(index, settings);
 }
 
 
 //--------------------------------------------------------------
-void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
+void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 {
+	settings = _settings;
 	device_count = k4a::device::get_installed_count();
 	if (device_count == 0)
 	{
 		ofLogError("ofxKinect4Azure") << "No Azure Kinect devices detected.";
+	}
+	else {
+		ofLogNotice("ofxKinect4Azure") << ofToString(device_count)+" Azure Kinect devices detected.";
 	}
 	if (device_count > index)
 	{
@@ -53,6 +51,12 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
 			ofLogError("ofxKinect4Azure") << "can't start Kinect Azure camera.";
 			return;
 		}
+		if (!settings.disable_imu) {
+			if (k4a_device_start_imu(device) != K4A_WAIT_RESULT_SUCCEEDED) {
+				ofLogError("ofxKinect4Azure") << "can't start IMU.";
+			}
+		}
+
 		k4a_device_get_calibration(device, settings.depth_mode, settings.color_resolution, &calibration);
 		transformation = k4a_transformation_create(&calibration);
 		device_index = index;
@@ -97,8 +101,12 @@ void ofxKinect4Azure::update(){
 		k4a_capture_t capture = nullptr;
 		if (k4a_device_get_capture(device, &capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 		{
-			ofLogError("ofxKinct4Azure") << "capture failed.";
 			return;
+		}
+		if (!settings.disable_imu) {
+			if (k4a_device_get_imu_sample(device, &imu, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
+				
+			}
 		}
 
 		k4a_image_t color_image, depth_image;
@@ -107,7 +115,10 @@ void ofxKinect4Azure::update(){
 		if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
 		{
 			depth_image = k4a_capture_get_depth_image(capture);
-			if (transform_type==DEPTH_TO_COLOR) {
+			if (settings.transform_type==DEPTH_TO_COLOR) {
+				if (!color_size.first > 0 || !color_size.second > 0) {
+					goto FIRST_UPDATE;
+				}
 				k4a_image_t transformed_depth_image;
 				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, color_size.first, color_size.second, color_size.first * sizeof(unsigned short), &transformed_depth_image);
 				k4a_transformation_depth_image_to_color_camera(transformation, depth_image, transformed_depth_image);
@@ -117,13 +128,18 @@ void ofxKinect4Azure::update(){
 			else {
 				d_ptr = &depth_image;
 			}
+
 			const int depth_width = k4a_image_get_width_pixels(*d_ptr);
 			const int depth_height = k4a_image_get_height_pixels(*d_ptr);
 			depth_size = pair<int, int>(depth_width, depth_height);
+
 			is_depth_frame_new = true;
 			b_depth_tex_new = false;
+
 			ofVec2f range = getDepthModeRange(settings.depth_mode);
 			uint8_t* d_buffer = k4a_image_get_buffer(*d_ptr);
+
+			//copy to depth pix
 			depth_pix.setFromPixels(reinterpret_cast<const unsigned short*>(d_buffer), depth_size.first, depth_size.second, OF_PIXELS_GRAY);
 			colorized_depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
 			auto d_data = depth_pix.getData();
@@ -133,7 +149,6 @@ void ofxKinect4Azure::update(){
 				for (int w = 0; w < depth_size.first; ++w)
 				{
 					const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
-					
 					ofColor colorized = ColorizeBlueToRed(d_data[current_pixel], range.x, range.y);
 					colorized_depth_pix_data[current_pixel * 4] = colorized.g;
 					colorized_depth_pix_data[current_pixel * 4 + 1] = colorized.b;
@@ -143,10 +158,11 @@ void ofxKinect4Azure::update(){
 			}
 		}
 
+FIRST_UPDATE:
 		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
 		{
 			color_image = k4a_capture_get_color_image(capture);
-			if (transform_type==COLOR_TO_DEPTH){
+			if (settings.transform_type==COLOR_TO_DEPTH){
 				k4a_image_t transformed_color_image;
 				k4a_image_create(settings.color_format, depth_size.first, depth_size.second, depth_size.first * sizeof(unsigned char)*4, &transformed_color_image);
 				k4a_transformation_color_image_to_depth_camera(transformation, depth_image, color_image,transformed_color_image);
