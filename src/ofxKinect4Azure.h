@@ -72,11 +72,11 @@ public:
 	//set IMU able state 
 	void enableIMU() { 
 		k4a_device_start_imu(device);
-		settings.disable_imu = false; 
+		settings.enable_imu = true; 
 	}
 	void disableIMU() { 
 		k4a_device_stop_imu(device);
-		settings.disable_imu = true;
+		settings.enable_imu = false;
 	}
 
 	ofPixels& getPixels() { return pix; }

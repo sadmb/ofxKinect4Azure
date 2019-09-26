@@ -13,8 +13,9 @@ struct ofxKinect4AzureSettings : k4a_device_configuration_t {
 
 public:
 	OFX_K4A_TRANSFORM_TYPE transform_type = NONE;
-	bool disable_pointcloud = false;
-	bool disable_imu = false;
+	bool make_pointcloud = false;
+	bool enable_imu = false;
+	bool make_colorize_depth = false;
 
 	ofxKinect4AzureSettings() {
 		color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;

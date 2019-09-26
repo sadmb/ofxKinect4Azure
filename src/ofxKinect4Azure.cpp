@@ -51,7 +51,7 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 			ofLogError("ofxKinect4Azure") << "can't start Kinect Azure camera.";
 			return;
 		}
-		if (!settings.disable_imu) {
+		if (settings.enable_imu) {
 			if (k4a_device_start_imu(device) != K4A_WAIT_RESULT_SUCCEEDED) {
 				ofLogError("ofxKinect4Azure") << "can't start IMU.";
 			}
@@ -103,7 +103,7 @@ void ofxKinect4Azure::update(){
 		{
 			return;
 		}
-		if (!settings.disable_imu) {
+		if (settings.enable_imu) {
 			if (k4a_device_get_imu_sample(device, &imu, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
 				
 			}
@@ -141,20 +141,37 @@ void ofxKinect4Azure::update(){
 
 			//copy to depth pix
 			depth_pix.setFromPixels(reinterpret_cast<const unsigned short*>(d_buffer), depth_size.first, depth_size.second, OF_PIXELS_GRAY);
-			colorized_depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
-			auto d_data = depth_pix.getData();
-			auto colorized_depth_pix_data = colorized_depth_pix.getData();
-			for (int h = 0; h < depth_size.second; ++h)
-			{
-				for (int w = 0; w < depth_size.first; ++w)
+
+			if (settings.make_colorize_depth) {
+				colorized_depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
+				auto d_data = depth_pix.getData();
+				auto colorized_depth_pix_data = colorized_depth_pix.getData();
+				for (int h = 0; h < depth_size.second; ++h)
 				{
-					const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
-					ofColor colorized = ColorizeBlueToRed(d_data[current_pixel], range.x, range.y);
-					colorized_depth_pix_data[current_pixel * 4] = colorized.g;
-					colorized_depth_pix_data[current_pixel * 4 + 1] = colorized.b;
-					colorized_depth_pix_data[current_pixel * 4 + 2] = colorized.r;
-					colorized_depth_pix_data[current_pixel * 4 + 3] = colorized.a;
+					for (int w = 0; w < depth_size.first; ++w)
+					{
+						const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
+						ofColor colorized = ColorizeBlueToRed(d_data[current_pixel], range.x, range.y);
+						colorized_depth_pix_data[current_pixel * 4] = colorized.g;
+						colorized_depth_pix_data[current_pixel * 4 + 1] = colorized.b;
+						colorized_depth_pix_data[current_pixel * 4 + 2] = colorized.r;
+						colorized_depth_pix_data[current_pixel * 4 + 3] = colorized.a;
+					}
 				}
+			}
+
+			if (settings.make_pointcloud) {
+				k4a_image_t pointcloud_image;
+				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, depth_size.first, depth_size.second, depth_size.first * sizeof(unsigned short) * 3, &pointcloud_image);
+				if (settings.transform_type == DEPTH_TO_COLOR) {
+					k4a_transformation_depth_image_to_point_cloud(transformation, *d_ptr, K4A_CALIBRATION_TYPE_COLOR, pointcloud_image);
+				}
+				else {
+					k4a_transformation_depth_image_to_point_cloud(transformation, *d_ptr, K4A_CALIBRATION_TYPE_DEPTH, pointcloud_image);
+				}
+				uint8_t* p_buffer = k4a_image_get_buffer(pointcloud_image);
+				pointcloud_pix.setFromPixels(reinterpret_cast<const unsigned short*>(p_buffer), depth_size.first, depth_size.second, OF_PIXELS_RGB);
+				k4a_image_release(pointcloud_image);
 			}
 		}
 
