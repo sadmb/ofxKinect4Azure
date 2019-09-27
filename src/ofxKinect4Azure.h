@@ -14,12 +14,15 @@ public:
 	k4a_transformation_t transformation;
 	k4a_imu_sample_t imu;
 
-	pair<int, int> color_size, depth_size;
+	ofVec2f color_size, depth_size;
 
 	ofPixels pix;
 	ofShortPixels depth_pix;
 	ofPixels colorized_depth_pix;
-	ofShortPixels pointcloud_pix;
+	ofVbo pointcloud_vbo;
+	int vertices_num = 0;
+	vector<glm::vec3> pointcloud_vert;
+	vector<glm::vec2> pointcloud_uv;
 
 	ofTexture color;
 	ofTexture depth;
@@ -63,8 +66,14 @@ public:
 	void setup(int index, ofxKinect4AzureSettings settings);
 	void saveCalibration(string filename = "calibration.json");
 	void update();
+	void updatePointcloud();
 	void draw(float x = 0, float y = 0, float w = 0, float h = 0);
 	void drawColorizedDepth(float x = 0, float y = 0, float w = 0, float h = 0);
+	float getWidth() { return color_size.x; }
+	float getHeight() { return color_size.y; }
+	float getDepthWidth() { return depth_size.x; }
+	float getDepthHeight() { return depth_size.y; }
+	bool isFrameNew() {return is_frame_new;}
 
 	//set transform mode COLOR_TO_DEPTH or DEPTH_TO_COLOR or NONE
 	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { settings.transform_type = _transform_type; }
@@ -81,21 +90,30 @@ public:
 
 	ofPixels& getPixels() { return pix; }
 	ofShortPixels& getDepthPixels() { return depth_pix; }
-	ofShortPixels& getPointcloudPix() { return pointcloud_pix; }
+	ofVbo& getPointcloudVbo() { return pointcloud_vbo; }
 
 	ofTexture& getTexture() {
-		if (!b_tex_new) {
-			color.allocate(pix);
-			b_tex_new = true;
+		if (is_frame_new) {
+			if (!b_tex_new) {
+				color.allocate(pix);
+				b_tex_new = true;
+			}
 		}
 		return color;
 	}
 	ofTexture& getDepthTexture() { 
-		if (!b_depth_tex_new) {
-			depth.allocate(depth_pix);
-			b_depth_tex_new = true;
+		if (is_frame_new) {
+			if (!b_depth_tex_new) {
+				depth.allocate(depth_pix);
+				b_depth_tex_new = true;
+			}
 		}
 		return depth;
+	}
+
+	ofVec2f getDepthModeRange()
+	{
+		return getDepthModeRange(settings.depth_mode);
 	}
 
 	ofVec2f getDepthModeRange(const k4a_depth_mode_t depth_mode)
@@ -117,6 +135,10 @@ public:
 			ofLogError("ofxKinect4Azure") << "Invalid depth mode!";
 			return range = ofVec2f();
 		}
+	}
+private:
+	ofVec2f getColorResolution() {
+		return getColorResolution(settings.color_resolution);
 	}
 
 	ofVec2f getColorResolution(const k4a_color_resolution_t color_resolution)
@@ -141,6 +163,10 @@ public:
 			ofLogError("ofxKinect4Azure") << "Invalid color dimensions value!";
 			return resolution = ofVec2f();
 		}
+	}
+
+	ofVec2f getDepthResolution() {
+		return getDepthResolution(settings.depth_mode);
 	}
 
 	ofVec2f getDepthResolution(const k4a_depth_mode_t depth_mode)

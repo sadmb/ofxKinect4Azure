@@ -58,20 +58,33 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 		}
 
 		k4a_device_get_calibration(device, settings.depth_mode, settings.color_resolution, &calibration);
+
 		transformation = k4a_transformation_create(&calibration);
+
+		switch (settings.transform_type) {
+		case DEPTH_TO_COLOR:
+			color_size = getColorResolution();
+			depth_size = getColorResolution();
+			break;
+		case COLOR_TO_DEPTH:
+			color_size = getDepthResolution();
+			depth_size = getDepthResolution();
+			break;
+		case NONE:
+			color_size = getColorResolution();
+			depth_size = getDepthResolution();
+			break;
+		}
+		vertices_num = depth_size.x*depth_size.y;
+		pointcloud_vert.resize(vertices_num);
+		pointcloud_uv.resize(vertices_num);
+		int w = depth_size.x;
+		for (int i = 0; i < vertices_num; i++) {
+			pointcloud_uv[i] = glm::vec2(i%w, i / w);
+		}
+		
 		device_index = index;
 		ofLogNotice("ofxKinect4Azure") << "Finished opening Kinect4Azure device.";
-
-		//if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
-		//{
-		//	ofVec2f depth_resolution = getDepthResolution(settings.depth_mode);
-		//	depth.allocate((int)depth_resolution.x, (int)depth_resolution.y, GL_LUMINANCE);
-		//}
-		//if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
-		//{
-		//	ofVec2f color_resolution = getColorResolution(settings.color_resolution);
-		//	color.allocate((int)color_resolution.x, (int)color_resolution.y, GL_RGB);
-		//}
 	}
 	else
 	{
@@ -97,11 +110,16 @@ void ofxKinect4Azure::saveCalibration(string filename)
 void ofxKinect4Azure::update(){
 	if (device_index >= 0)
 	{
-		is_frame_new = is_depth_frame_new = false;
+		is_frame_new = false;
 		k4a_capture_t capture = nullptr;
 		if (k4a_device_get_capture(device, &capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 		{
 			return;
+		}
+		else {
+			is_frame_new = true;
+			b_tex_new = false;
+			b_depth_tex_new = false;
 		}
 		if (settings.enable_imu) {
 			if (k4a_device_get_imu_sample(device, &imu, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
@@ -116,11 +134,8 @@ void ofxKinect4Azure::update(){
 		{
 			depth_image = k4a_capture_get_depth_image(capture);
 			if (settings.transform_type==DEPTH_TO_COLOR) {
-				if (!color_size.first > 0 || !color_size.second > 0) {
-					goto FIRST_UPDATE;
-				}
 				k4a_image_t transformed_depth_image;
-				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, color_size.first, color_size.second, color_size.first * sizeof(unsigned short), &transformed_depth_image);
+				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, depth_size.x, depth_size.y, depth_size.x * sizeof(unsigned short), &transformed_depth_image);
 				k4a_transformation_depth_image_to_color_camera(transformation, depth_image, transformed_depth_image);
 				d_ptr = &transformed_depth_image;
 				k4a_image_release(depth_image);
@@ -129,28 +144,21 @@ void ofxKinect4Azure::update(){
 				d_ptr = &depth_image;
 			}
 
-			const int depth_width = k4a_image_get_width_pixels(*d_ptr);
-			const int depth_height = k4a_image_get_height_pixels(*d_ptr);
-			depth_size = pair<int, int>(depth_width, depth_height);
-
-			is_depth_frame_new = true;
-			b_depth_tex_new = false;
-
 			ofVec2f range = getDepthModeRange(settings.depth_mode);
 			uint8_t* d_buffer = k4a_image_get_buffer(*d_ptr);
 
 			//copy to depth pix
-			depth_pix.setFromPixels(reinterpret_cast<const unsigned short*>(d_buffer), depth_size.first, depth_size.second, OF_PIXELS_GRAY);
+			depth_pix.setFromPixels(reinterpret_cast<const unsigned short*>(d_buffer), depth_size.x, depth_size.y, OF_PIXELS_GRAY);
 
 			if (settings.make_colorize_depth) {
-				colorized_depth_pix.allocate(depth_size.first, depth_size.second, OF_PIXELS_BGRA);
+				colorized_depth_pix.allocate(depth_size.x, depth_size.y, OF_PIXELS_BGRA);
 				auto d_data = depth_pix.getData();
 				auto colorized_depth_pix_data = colorized_depth_pix.getData();
-				for (int h = 0; h < depth_size.second; ++h)
+				for (int h = 0; h < depth_size.y; ++h)
 				{
-					for (int w = 0; w < depth_size.first; ++w)
+					for (int w = 0; w < depth_size.x; ++w)
 					{
-						const size_t current_pixel = static_cast<size_t>(h * depth_size.first + w);
+						const size_t current_pixel = static_cast<size_t>(h * depth_size.x + w);
 						ofColor colorized = ColorizeBlueToRed(d_data[current_pixel], range.x, range.y);
 						colorized_depth_pix_data[current_pixel * 4] = colorized.g;
 						colorized_depth_pix_data[current_pixel * 4 + 1] = colorized.b;
@@ -162,26 +170,29 @@ void ofxKinect4Azure::update(){
 
 			if (settings.make_pointcloud) {
 				k4a_image_t pointcloud_image;
-				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, depth_size.first, depth_size.second, depth_size.first * sizeof(unsigned short) * 3, &pointcloud_image);
+				k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, depth_size.x, depth_size.y, depth_size.x * sizeof(short) * 3, &pointcloud_image);
 				if (settings.transform_type == DEPTH_TO_COLOR) {
 					k4a_transformation_depth_image_to_point_cloud(transformation, *d_ptr, K4A_CALIBRATION_TYPE_COLOR, pointcloud_image);
 				}
 				else {
 					k4a_transformation_depth_image_to_point_cloud(transformation, *d_ptr, K4A_CALIBRATION_TYPE_DEPTH, pointcloud_image);
 				}
-				uint8_t* p_buffer = k4a_image_get_buffer(pointcloud_image);
-				pointcloud_pix.setFromPixels(reinterpret_cast<const unsigned short*>(p_buffer), depth_size.first, depth_size.second, OF_PIXELS_RGB);
+				short* p_buffer = (short*)k4a_image_get_buffer(pointcloud_image);
+
+				for (int i = 0; i < vertices_num; i++) {
+					pointcloud_vert[i] = glm::vec3(p_buffer[i * 3], p_buffer[i * 3 + 1], p_buffer[i * 3 + 2]);
+				}
+
 				k4a_image_release(pointcloud_image);
 			}
 		}
 
-FIRST_UPDATE:
 		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
 		{
 			color_image = k4a_capture_get_color_image(capture);
 			if (settings.transform_type==COLOR_TO_DEPTH){
 				k4a_image_t transformed_color_image;
-				k4a_image_create(settings.color_format, depth_size.first, depth_size.second, depth_size.first * sizeof(unsigned char)*4, &transformed_color_image);
+				k4a_image_create(settings.color_format, depth_size.x, depth_size.y, depth_size.x * sizeof(unsigned char)*4, &transformed_color_image);
 				k4a_transformation_color_image_to_depth_camera(transformation, depth_image, color_image,transformed_color_image);
 				c_ptr = &transformed_color_image;
 				k4a_image_release(color_image);
@@ -189,19 +200,23 @@ FIRST_UPDATE:
 			else {
 				c_ptr = &color_image;
 			}
-			const int color_width = k4a_image_get_width_pixels(*c_ptr);
-			const int color_height = k4a_image_get_height_pixels(*c_ptr);
-			color_size = pair<int, int>(color_width, color_height);
-			is_frame_new = true;
-			b_tex_new = false;
+			
 			uint8_t* c_buffer = k4a_image_get_buffer(*c_ptr);
-			pix.setFromPixels((const unsigned char*)(c_buffer), color_size.first, color_size.second, OF_PIXELS_BGRA);
+			pix.setFromPixels((const unsigned char*)(c_buffer), color_size.x, color_size.y, OF_PIXELS_BGRA);
 		}
 
 		if(c_ptr!=nullptr)k4a_image_release(*c_ptr);
 		if(d_ptr!=nullptr)k4a_image_release(*d_ptr);
 		
 		k4a_capture_release(capture);
+	}
+}
+
+void ofxKinect4Azure::updatePointcloud()
+{
+	if (is_frame_new) {
+		pointcloud_vbo.setVertexData(pointcloud_vert.data(), vertices_num, GL_STREAM_DRAW);
+		pointcloud_vbo.setTexCoordData(pointcloud_uv.data(), vertices_num, GL_STREAM_DRAW);
 	}
 }
 
@@ -250,11 +265,11 @@ void ofxKinect4Azure::drawColorizedDepth(float x, float y, float w, float h)
 			{
 				if (w == 0)
 				{
-					w = depth_size.first;
+					w = depth_size.x;
 				}
 				if (h == 0)
 				{
-					h = depth_size.second;
+					h = depth_size.y;
 				}
 				ofPushStyle();
 				ofSetColor(255);
