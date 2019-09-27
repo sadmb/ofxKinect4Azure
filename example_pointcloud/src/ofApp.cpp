@@ -26,9 +26,10 @@ void ofApp::draw(){
 	ofEnableDepthTest();
 
 	auto& color_tex= k4a.getTexture();
+	auto& pointcloud = k4a.getPointcloudVbo();
 	if (color_tex.isAllocated()) {
 		color_tex.bind();
-		k4a.getPointcloudVbo().draw(GL_POINTS, 0, k4a.vertices_num);
+		pointcloud.draw(GL_POINTS, 0, pointcloud.getNumVertices());
 		color_tex.unbind();
 	}
 
