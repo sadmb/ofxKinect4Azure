@@ -5,6 +5,7 @@ void ofApp::setup(){
 	ofSetWindowTitle("ofxKinect4Azure example");
 	ofxKinect4AzureSettings settings;
 	settings.transform_type = DEPTH_TO_COLOR;
+	settings.make_colorize_depth = true;
 	k4a.setup(settings);
 	
 

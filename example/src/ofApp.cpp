@@ -3,7 +3,11 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	ofSetWindowTitle("ofxKinect4Azure example");
-	k4a.setup();
+
+	ofxKinect4AzureSettings settings;
+	settings.make_colorize_depth = true;
+	k4a.setup(settings);
+	
 	//setup with settings
 	//
 	//ofxKinect4AzureSettings settings;
@@ -26,7 +30,7 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 	k4a.draw(0, 0, 800, 450);
-	k4a.drawDepth(0, 460);
+	k4a.drawColorizedDepth(0, 460);
 	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
 
