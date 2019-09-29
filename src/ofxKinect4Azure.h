@@ -5,6 +5,8 @@
 #include "k4abt.h"
 #include "ofxKinect4AzureSettings.h"
 
+#define STR(var) #var
+
 
 class ofxKinect4Azure {
 
@@ -41,6 +43,9 @@ public:
 	vector<glm::vec3> pointcloud_vert;
 	vector<glm::vec2> pointcloud_uv;
 
+	//for tracker
+	vector<vector<glm::vec3>> bones;
+
 	//flag for 
 	bool is_frame_new = false;
 	bool b_tex_new = false;
@@ -72,7 +77,13 @@ public:
 		ofxKinect4Azure();
 		return (*this);
 	}
-	~ofxKinect4Azure() {};
+	~ofxKinect4Azure() {
+		k4a_device_stop_cameras(device);
+		if (settings.enable_imu) {
+			k4a_device_stop_imu(device);
+		}
+		k4a_device_close(device);
+	};
 
 	void setup();
 	void setup(ofxKinect4AzureSettings settings);

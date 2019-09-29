@@ -232,18 +232,26 @@ void ofxKinect4Azure::update() {
 	if (ir_ptr != nullptr)k4a_image_release(*ir_ptr);
 
 	if (settings.use_tracker) {
-		k4abt_tracker_enqueue_capture(tracker, capture, 0);
+		if(k4abt_tracker_enqueue_capture(tracker, capture, 0)!=K4A_WAIT_RESULT_SUCCEEDED){
+			k4a_capture_release(capture);
+			return;
+		}
 		k4abt_frame_t frame=nullptr;
 		if (k4abt_tracker_pop_result(tracker, &frame, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
 			k4a_capture_release(capture);
 			return;
 		}
 		body.resize(k4abt_frame_get_num_bodies(frame));
+		bones.resize(body.size());
 		for (int i = 0; i < body.size(); i++) {
 			body[i].id = k4abt_frame_get_body_id(frame, i);
 			k4abt_frame_get_body_skeleton(frame, i, &body[i].skeleton);
+			bones[i].resize(K4ABT_JOINT_COUNT);
 			for (int j = 0; j < K4ABT_JOINT_COUNT; j++) {
-				cout << body[i].skeleton.joints[j].position.xyz.x << endl;
+				auto pos = body[i].skeleton.joints[j].position.v;
+				bones[i][j].x = pos[0];
+				bones[i][j].y = pos[1];
+				bones[i][j].z = pos[2];
 			}
 		}
 		
