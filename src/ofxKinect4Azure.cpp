@@ -118,6 +118,7 @@ void ofxKinect4Azure::update() {
 		is_frame_new = true;
 		b_tex_new = false;
 		b_depth_tex_new = false;
+		b_ir_tex_new = false;
 	}
 	if (settings.enable_imu) {
 		if (k4a_device_get_imu_sample(device, &imu, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
@@ -125,8 +126,8 @@ void ofxKinect4Azure::update() {
 		}
 	}
 
-	k4a_image_t color_image, depth_image;
-	k4a_image_t	*c_ptr = nullptr, *d_ptr = nullptr;
+	k4a_image_t color_image, depth_image,ir_image;
+	k4a_image_t	*c_ptr = nullptr, *d_ptr = nullptr, *ir_ptr = nullptr;
 
 	if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
 	{
@@ -183,6 +184,23 @@ void ofxKinect4Azure::update() {
 
 			k4a_image_release(pointcloud_image);
 		}
+
+		if (settings.use_ir_image) {
+			ir_image = k4a_capture_get_ir_image(capture);
+			if (settings.transform_type == DEPTH_TO_COLOR) {
+				k4a_image_t transformed_ir_image;
+				k4a_image_create(K4A_IMAGE_FORMAT_IR16, depth_size.x, depth_size.y, depth_size.x * sizeof(unsigned short), &transformed_ir_image);
+				k4a_transformation_depth_image_to_color_camera(transformation, ir_image, transformed_ir_image);
+				ir_ptr = &transformed_ir_image;
+				k4a_image_release(ir_image);
+			}
+			else {
+				ir_ptr = &ir_image;
+			}
+			uint8_t* ir_buffer = k4a_image_get_buffer(*ir_ptr);
+
+			ir_pix.setFromPixels(reinterpret_cast<const unsigned short*>(ir_buffer), depth_size.x, depth_size.y, OF_PIXELS_GRAY);
+		}
 	}
 
 	if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
@@ -205,6 +223,7 @@ void ofxKinect4Azure::update() {
 
 	if (c_ptr != nullptr)k4a_image_release(*c_ptr);
 	if (d_ptr != nullptr)k4a_image_release(*d_ptr);
+	if (ir_ptr != nullptr)k4a_image_release(*ir_ptr);
 
 	k4a_capture_release(capture);
 }
@@ -271,3 +290,28 @@ void ofxKinect4Azure::drawColorizedDepth(float x, float y, float w, float h)
 	}
 }
 
+void ofxKinect4Azure::drawIR(float x, float y, float w, float h)
+{
+	if (settings.depth_mode != K4A_DEPTH_MODE_OFF)
+	{
+		if (!b_ir_tex_new) {
+			ir.allocate(ir_pix);
+			b_ir_tex_new = true;
+		}
+		if (ir.isAllocated())
+		{
+			if (w == 0)
+			{
+				w = depth_size.x;
+			}
+			if (h == 0)
+			{
+				h = depth_size.y;
+			}
+			ofPushStyle();
+			ofSetColor(255);
+			ir.draw(x, y, w, h);
+			ofPopStyle();
+		}
+	}
+}

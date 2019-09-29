@@ -16,6 +16,7 @@ public:
 	bool make_pointcloud = false;
 	bool enable_imu = false;
 	bool make_colorize_depth = false;
+	bool use_ir_image = false;
 
 	ofxKinect4AzureSettings() {
 		color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;

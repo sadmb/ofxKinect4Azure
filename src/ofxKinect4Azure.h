@@ -9,6 +9,7 @@ class ofxKinect4Azure {
 
 public:
 	ofxKinect4AzureSettings settings;
+
 	k4a_device_t device;
 	k4a_calibration_t calibration;
 	k4a_transformation_t transformation;
@@ -19,6 +20,8 @@ public:
 	ofPixels pix;
 	ofShortPixels depth_pix;
 	ofPixels colorized_depth_pix;
+	ofShortPixels ir_pix;
+
 	ofVbo pointcloud_vbo;
 	int vertices_num = 0;
 	vector<glm::vec3> pointcloud_vert;
@@ -27,11 +30,12 @@ public:
 	ofTexture color;
 	ofTexture depth;
 	ofTexture colorized_depth;
-	
+	ofTexture ir;
+
 	bool is_frame_new = false;
-	bool is_depth_frame_new = false;
 	bool b_tex_new = false;
 	bool b_depth_tex_new = false;
+	bool b_ir_tex_new = false;
 
 	int device_index = -1;
 	int device_count = 0;
@@ -69,21 +73,22 @@ public:
 	void updatePointcloud();
 	void draw(float x = 0, float y = 0, float w = 0, float h = 0);
 	void drawColorizedDepth(float x = 0, float y = 0, float w = 0, float h = 0);
+	void drawIR(float x = 0, float y = 0, float w = 0, float h = 0);
 	float getWidth() { return color_size.x; }
 	float getHeight() { return color_size.y; }
 	float getDepthWidth() { return depth_size.x; }
 	float getDepthHeight() { return depth_size.y; }
-	bool isFrameNew() {return is_frame_new;}
+	bool isFrameNew() { return is_frame_new; }
 
 	//set transform mode COLOR_TO_DEPTH or DEPTH_TO_COLOR or NONE
 	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { settings.transform_type = _transform_type; }
 
 	//set IMU able state 
-	void enableIMU() { 
+	void enableIMU() {
 		k4a_device_start_imu(device);
-		settings.enable_imu = true; 
+		settings.enable_imu = true;
 	}
-	void disableIMU() { 
+	void disableIMU() {
 		k4a_device_stop_imu(device);
 		settings.enable_imu = false;
 	}
@@ -101,7 +106,7 @@ public:
 		}
 		return color;
 	}
-	ofTexture& getDepthTexture() { 
+	ofTexture& getDepthTexture() {
 		if (is_frame_new) {
 			if (!b_depth_tex_new) {
 				depth.allocate(depth_pix);
@@ -109,6 +114,15 @@ public:
 			}
 		}
 		return depth;
+	}
+	ofTexture& getIRTexture() {
+		if (is_frame_new) {
+			if (!b_ir_tex_new) {
+				ir.allocate(ir_pix);
+				b_ir_tex_new = true;
+			}
+		}
+		return ir;
 	}
 
 	ofVec2f getDepthModeRange()
@@ -199,7 +213,7 @@ private:
 
 		// Default to opaque black.
 		//
-		ofColor result = ofColor( 0, 0, 0, PixelMax );
+		ofColor result = ofColor(0, 0, 0, PixelMax);
 
 		// If the pixel is actual zero and not just below the min value, make it black
 		//
