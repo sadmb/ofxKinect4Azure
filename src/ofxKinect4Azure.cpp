@@ -58,8 +58,11 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 		}
 
 		k4a_device_get_calibration(device, settings.depth_mode, settings.color_resolution, &calibration);
-
 		transformation = k4a_transformation_create(&calibration);
+		if (settings.use_tracker) {
+			k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
+			k4abt_tracker_create(&calibration, tracker_config ,&tracker);
+		}
 
 		switch (settings.transform_type) {
 		case DEPTH_TO_COLOR:
@@ -227,6 +230,25 @@ void ofxKinect4Azure::update() {
 	if (c_ptr != nullptr)k4a_image_release(*c_ptr);
 	if (d_ptr != nullptr)k4a_image_release(*d_ptr);
 	if (ir_ptr != nullptr)k4a_image_release(*ir_ptr);
+
+	if (settings.use_tracker) {
+		k4abt_tracker_enqueue_capture(tracker, capture, 0);
+		k4abt_frame_t frame=nullptr;
+		if (k4abt_tracker_pop_result(tracker, &frame, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
+			k4a_capture_release(capture);
+			return;
+		}
+		body.resize(k4abt_frame_get_num_bodies(frame));
+		for (int i = 0; i < body.size(); i++) {
+			body[i].id = k4abt_frame_get_body_id(frame, i);
+			k4abt_frame_get_body_skeleton(frame, i, &body[i].skeleton);
+			for (int j = 0; j < K4ABT_JOINT_COUNT; j++) {
+				cout << body[i].skeleton.joints[j].position.xyz.x << endl;
+			}
+		}
+		
+		k4abt_frame_release(frame);
+	}
 
 	k4a_capture_release(capture);
 }

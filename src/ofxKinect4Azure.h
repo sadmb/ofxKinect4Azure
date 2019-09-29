@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "k4a.hpp"
+#include "k4abt.h"
 #include "ofxKinect4AzureSettings.h"
 
 
@@ -10,11 +11,14 @@ class ofxKinect4Azure {
 public:
 	ofxKinect4AzureSettings settings;
 
-	//k4a_handles
+	//k4a handles
 	k4a_device_t device;
 	k4a_calibration_t calibration;
 	k4a_transformation_t transformation;
 	k4a_imu_sample_t imu;
+	//k4abt handles
+	k4abt_tracker_t tracker;
+	vector<k4abt_body_t> body;
 
 	//color/depth resolution
 	ofVec2f color_size, depth_size;
@@ -332,8 +336,11 @@ public:
 			{
 				ofLogError("ofxKinect4Azure") << "Failed to read device serial number!";
 			}
-			serial_to_id.emplace(serialnum, i);
-			serial_list.push_back(serialnum);
+			else {
+				serial_to_id.emplace(serialnum, i);
+				serial_list.push_back(serialnum);
+				ofLogNotice("ofxKinect4Azure") << "[device " << i << "] : " << serialnum;
+			}
 			k4a_device_close(d);
 		}
 	}

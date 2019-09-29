@@ -68,3 +68,17 @@ common:
 	ADDON_LIBS += libs/amd64/release/lib/k4a.lib
 	ADDON_LIBS += libs/amd64/release/lib/k4abt.lib
 	ADDON_LIBS += libs/amd64/release/lib/k4arecord.lib
+
+
+	ADDON_DLLS_TO_COPY =
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4a.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4abt.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/depthengine_2_0.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4arecord.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/onnxruntime.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/cudnn64_7.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/dnn_model.onnx
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/dnn_model_2_0.onnx
+
+
+
