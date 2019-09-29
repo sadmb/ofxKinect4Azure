@@ -177,9 +177,12 @@ void ofxKinect4Azure::update() {
 				k4a_transformation_depth_image_to_point_cloud(transformation, *d_ptr, K4A_CALIBRATION_TYPE_DEPTH, pointcloud_image);
 			}
 			short* p_buffer = (short*)k4a_image_get_buffer(pointcloud_image);
+			auto p_data = pointcloud_vert.data();
 
 			for (int i = 0; i < vertices_num; i++) {
-				pointcloud_vert[i] = glm::vec3(p_buffer[i * 3], p_buffer[i * 3 + 1], p_buffer[i * 3 + 2]);
+				p_data[i].x = p_buffer[i * 3];
+				p_data[i].y = p_buffer[i * 3 + 1];
+				p_data[i].z = p_buffer[i * 3 + 2];
 			}
 
 			k4a_image_release(pointcloud_image);

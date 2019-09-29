@@ -10,28 +10,34 @@ class ofxKinect4Azure {
 public:
 	ofxKinect4AzureSettings settings;
 
+	//k4a_handles
 	k4a_device_t device;
 	k4a_calibration_t calibration;
 	k4a_transformation_t transformation;
 	k4a_imu_sample_t imu;
 
+	//color/depth resolution
 	ofVec2f color_size, depth_size;
 
+	//pixels
 	ofPixels pix;
 	ofShortPixels depth_pix;
 	ofPixels colorized_depth_pix;
 	ofShortPixels ir_pix;
 
-	ofVbo pointcloud_vbo;
-	int vertices_num = 0;
-	vector<glm::vec3> pointcloud_vert;
-	vector<glm::vec2> pointcloud_uv;
-
+	//textures
 	ofTexture color;
 	ofTexture depth;
 	ofTexture colorized_depth;
 	ofTexture ir;
 
+	//for pointcloud
+	ofVbo pointcloud_vbo;
+	int vertices_num = 0;
+	vector<glm::vec3> pointcloud_vert;
+	vector<glm::vec2> pointcloud_uv;
+
+	//flag for 
 	bool is_frame_new = false;
 	bool b_tex_new = false;
 	bool b_depth_tex_new = false;
@@ -295,5 +301,59 @@ private:
 		delete[] serial_number;
 		serial_number = NULL;
 		return s;
+	}
+};
+
+class ofxKinect4AzureManager {
+	vector<string> serial_list;
+	std::map<string, int> serial_to_id;
+	int device_count = 0;
+public:
+	ofxKinect4AzureManager() {
+		serial_list.clear();
+		serial_to_id.clear();
+		device_count = k4a_device_get_installed_count();
+		for (int i = 0; i < device_count; i++) {
+			k4a_device_t d;
+			k4a_device_open(i, &d);
+			std::string serialnum;
+			size_t buffer = 0;
+			k4a_buffer_result_t result = k4a_device_get_serialnum(d, &serialnum[0], &buffer);
+			if (result == K4A_BUFFER_RESULT_TOO_SMALL && buffer > 1)
+			{
+				serialnum.resize(buffer);
+				result = k4a_device_get_serialnum(d, &serialnum[0], &buffer);
+				if (result == K4A_BUFFER_RESULT_SUCCEEDED && serialnum[buffer - 1] == 0)
+				{
+					serialnum.resize(buffer - 1);
+				}
+			}
+			if (result != K4A_BUFFER_RESULT_SUCCEEDED)
+			{
+				ofLogError("ofxKinect4Azure") << "Failed to read device serial number!";
+			}
+			serial_to_id.emplace(serialnum, i);
+			serial_list.push_back(serialnum);
+			k4a_device_close(d);
+		}
+	}
+
+	~ofxKinect4AzureManager() {}
+
+	vector<string> getDeviceSerialList() {
+		return serial_list;
+	}
+
+	void setupWithSerial(string _serial_num, ofxKinect4Azure* _k4a, ofxKinect4AzureSettings _settings = ofxKinect4AzureSettings()) {
+		if (serial_to_id.find(_serial_num) != serial_to_id.end()) {
+			_k4a->setup(serial_to_id[_serial_num], _settings);
+		}
+		else {
+			ofLogError("ofxKinect4Azure") << "NO device found matching serial number";
+		}
+	}
+
+	int getDeviceNum() {
+		return device_count;
 	}
 };
