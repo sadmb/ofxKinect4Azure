@@ -5,9 +5,6 @@
 #include "k4abt.h"
 #include "ofxKinect4AzureSettings.h"
 
-#define STR(var) #var
-
-
 class ofxKinect4Azure {
 
 public:
@@ -44,7 +41,8 @@ public:
 	vector<glm::vec2> pointcloud_uv;
 
 	//for tracker
-	vector<vector<glm::vec3>> bones;
+	vector<ofxKinect4AzureBody> bodies;
+	bool b_tracker_processing = false;
 
 	//flag for 
 	bool is_frame_new = false;
@@ -95,28 +93,16 @@ public:
 	void draw(float x = 0, float y = 0, float w = 0, float h = 0);
 	void drawColorizedDepth(float x = 0, float y = 0, float w = 0, float h = 0);
 	void drawIR(float x = 0, float y = 0, float w = 0, float h = 0);
+
 	float getWidth() { return color_size.x; }
 	float getHeight() { return color_size.y; }
 	float getDepthWidth() { return depth_size.x; }
 	float getDepthHeight() { return depth_size.y; }
-	bool isFrameNew() { return is_frame_new; }
-
-	//set transform mode COLOR_TO_DEPTH or DEPTH_TO_COLOR or NONE
-	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { settings.transform_type = _transform_type; }
-
-	//set IMU able state 
-	void enableIMU() {
-		k4a_device_start_imu(device);
-		settings.enable_imu = true;
-	}
-	void disableIMU() {
-		k4a_device_stop_imu(device);
-		settings.enable_imu = false;
-	}
 
 	ofPixels& getPixels() { return pix; }
 	ofShortPixels& getDepthPixels() { return depth_pix; }
 	ofVbo& getPointcloudVbo() { return pointcloud_vbo; }
+	vector<ofxKinect4AzureBody>& getBodies() { return bodies; }
 
 	ofTexture& getTexture() {
 		if (is_frame_new) {
@@ -144,6 +130,21 @@ public:
 			}
 		}
 		return ir;
+	}
+
+	bool isFrameNew() { return is_frame_new; }
+
+	//set transform mode COLOR_TO_DEPTH or DEPTH_TO_COLOR or NONE
+	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { settings.transform_type = _transform_type; }
+
+	//set IMU able state 
+	void enableIMU() {
+		k4a_device_start_imu(device);
+		settings.enable_imu = true;
+	}
+	void disableIMU() {
+		k4a_device_stop_imu(device);
+		settings.enable_imu = false;
 	}
 
 	ofVec2f getDepthModeRange()

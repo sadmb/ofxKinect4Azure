@@ -4,12 +4,14 @@
 void ofApp::setup(){
 	ofxKinect4AzureSettings settings;
 	settings.use_tracker=true;
-	settings.use_ir_image = true;
 	settings.make_pointcloud = true;
+	settings.transform_type = COLOR_TO_DEPTH;
 
 	k4a.setup(settings);
 
 	cam.setVFlip(true);
+
+	ofSetVerticalSync(true);
 }
 
 //--------------------------------------------------------------
@@ -22,27 +24,30 @@ void ofApp::update(){
 void ofApp::draw(){
 	cam.begin();
 	ofEnableDepthTest();
-	auto& tex = k4a.getIRTexture();
+	auto& tex = k4a.getTexture();
 	auto& pointcloud = k4a.getPointcloudVbo();
 	tex.bind();
 	pointcloud.draw(GL_POINTS, 0, pointcloud.getNumVertices());
 	tex.unbind();
 	ofDisableDepthTest();
 	ofSetColor(ofColor::red);
-	for (auto b : k4a.bones) {
-		for (auto b_ : b) {
-			ofDrawSphere(b_, 10);
+	auto heading = glm::vec3(0, 1, 0);
+	for (auto& b : k4a.getBodies()) {
+		for (int i = 0; i < K4ABT_JOINT_COUNT;i++) {
+			auto& pos = b.positon[i];
+			ofDrawSphere(pos, 10);
+			ofDrawLine(pos, pos + glm::rotate(b.quaternion[i], heading) * 100);
+			ofDrawBitmapString(joint_id_to_name.at((k4abt_joint_id_t)i),pos);
 		}
 	}
 	ofSetColor(255);
 	cam.end();
-
 	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+	
 }
 
 //--------------------------------------------------------------

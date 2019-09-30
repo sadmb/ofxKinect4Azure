@@ -232,26 +232,40 @@ void ofxKinect4Azure::update() {
 	if (ir_ptr != nullptr)k4a_image_release(*ir_ptr);
 
 	if (settings.use_tracker) {
-		if(k4abt_tracker_enqueue_capture(tracker, capture, 0)!=K4A_WAIT_RESULT_SUCCEEDED){
+		k4abt_frame_t frame = nullptr;
+		k4a_wait_result_t frame_get_result;
+		frame_get_result = k4abt_tracker_pop_result(tracker, &frame, 0);
+
+		if (frame_get_result == K4A_WAIT_RESULT_SUCCEEDED) {
+			b_tracker_processing = false;
+		}
+
+		if (!b_tracker_processing) {
+			if (k4abt_tracker_enqueue_capture(tracker, capture, 0) == K4A_WAIT_RESULT_SUCCEEDED) {
+				b_tracker_processing = true;
+			}
+		}
+
+		if (frame_get_result != K4A_WAIT_RESULT_SUCCEEDED) {
 			k4a_capture_release(capture);
 			return;
 		}
-		k4abt_frame_t frame=nullptr;
-		if (k4abt_tracker_pop_result(tracker, &frame, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
-			k4a_capture_release(capture);
-			return;
-		}
-		body.resize(k4abt_frame_get_num_bodies(frame));
-		bones.resize(body.size());
-		for (int i = 0; i < body.size(); i++) {
-			body[i].id = k4abt_frame_get_body_id(frame, i);
-			k4abt_frame_get_body_skeleton(frame, i, &body[i].skeleton);
-			bones[i].resize(K4ABT_JOINT_COUNT);
+		
+		bodies.resize(k4abt_frame_get_num_bodies(frame));
+		for (int i = 0; i < bodies.size(); i++) {
+			k4abt_body_t body;
+			bodies[i].id = k4abt_frame_get_body_id(frame, i);
+			k4abt_frame_get_body_skeleton(frame, i, &body.skeleton);
 			for (int j = 0; j < K4ABT_JOINT_COUNT; j++) {
-				auto pos = body[i].skeleton.joints[j].position.v;
-				bones[i][j].x = pos[0];
-				bones[i][j].y = pos[1];
-				bones[i][j].z = pos[2];
+				auto pos = body.skeleton.joints[j].position.v;
+				bodies[i].positon[j].x = pos[0];
+				bodies[i].positon[j].y = pos[1];
+				bodies[i].positon[j].z = pos[2];
+				auto quat = body.skeleton.joints[j].orientation.wxyz;
+				bodies[i].quaternion[j].w = quat.w;
+				bodies[i].quaternion[j].x = quat.x;
+				bodies[i].quaternion[j].y = quat.y;
+				bodies[i].quaternion[j].z = quat.z;
 			}
 		}
 		
