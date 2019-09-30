@@ -24,4 +24,54 @@ class ofApp : public ofBaseApp{
 		
 		ofxKinect4Azure k4a;
 		ofEasyCam cam;
+		vector<vector<ofConePrimitive>> bones;
+		vector<vector<ofSpherePrimitive>> axises;
+		int num_bodies=0;
+
+		//for joint index
+		vector<k4abt_joint_id_t> pelvis_to_head = {
+			K4ABT_JOINT_PELVIS,
+			K4ABT_JOINT_SPINE_NAVAL,
+			K4ABT_JOINT_SPINE_CHEST,
+			K4ABT_JOINT_NECK,
+			K4ABT_JOINT_HEAD,
+			K4ABT_JOINT_NOSE
+		};
+
+		vector<string> left_right = {
+			"LEFT",
+			"RIGHT"
+		};
+
+		vector<string> clavicle_to_wrist{
+			"CLAVICLE_",
+			"SHOULDER_",
+			"ELBOW_",
+			"WRIST_"
+		};
+
+		vector<string> hip_to_foot = {
+			"HIP_",
+			"KNEE_",
+			"ANKLE_",
+			"FOOT_"
+		};
+
+		vector<string> eye_ear={
+			"EYE_",
+			"EAR_"
+		};
+
+		vector<ofColor> id_to_color = {
+			ofColor::red,
+			ofColor::blue,
+			ofColor::green,
+			ofColor::skyBlue,
+			ofColor::orange,
+			ofColor::yellow,
+			ofColor::purple,
+			ofColor::pink,
+			ofColor::lime,
+			ofColor::crimson
+		};
 };

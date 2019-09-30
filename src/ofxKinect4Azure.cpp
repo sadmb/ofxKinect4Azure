@@ -112,6 +112,7 @@ void ofxKinect4Azure::saveCalibration(string filename)
 //--------------------------------------------------------------
 void ofxKinect4Azure::update() {
 	is_frame_new = false;
+	b_tracker_new = false;
 	k4a_capture_t capture = nullptr;
 	if (k4a_device_get_capture(device, &capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 	{
@@ -238,6 +239,7 @@ void ofxKinect4Azure::update() {
 
 		if (frame_get_result == K4A_WAIT_RESULT_SUCCEEDED) {
 			b_tracker_processing = false;
+			b_tracker_new = true;
 		}
 
 		if (!b_tracker_processing) {
@@ -258,14 +260,14 @@ void ofxKinect4Azure::update() {
 			k4abt_frame_get_body_skeleton(frame, i, &body.skeleton);
 			for (int j = 0; j < K4ABT_JOINT_COUNT; j++) {
 				auto pos = body.skeleton.joints[j].position.v;
-				bodies[i].positon[j].x = pos[0];
-				bodies[i].positon[j].y = pos[1];
-				bodies[i].positon[j].z = pos[2];
+				bodies[i].joint[j].position.x = pos[0];
+				bodies[i].joint[j].position.y = pos[1];
+				bodies[i].joint[j].position.z = pos[2];
 				auto quat = body.skeleton.joints[j].orientation.wxyz;
-				bodies[i].quaternion[j].w = quat.w;
-				bodies[i].quaternion[j].x = quat.x;
-				bodies[i].quaternion[j].y = quat.y;
-				bodies[i].quaternion[j].z = quat.z;
+				bodies[i].joint[j].quaternion.w = quat.w;
+				bodies[i].joint[j].quaternion.x = quat.x;
+				bodies[i].joint[j].quaternion.y = quat.y;
+				bodies[i].joint[j].quaternion.z = quat.z;
 			}
 		}
 		

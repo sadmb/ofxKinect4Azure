@@ -9,10 +9,14 @@ enum OFX_K4A_TRANSFORM_TYPE {
 	DEPTH_TO_COLOR
 };
 
+struct ofxKinect4AzureJoint {
+	glm::vec3 position;
+	glm::quat quaternion;
+};
+
 struct ofxKinect4AzureBody {
 	int id;
-	glm::vec3 positon[K4ABT_JOINT_COUNT];
-	glm::quat quaternion[K4ABT_JOINT_COUNT];
+	ofxKinect4AzureJoint joint[K4ABT_JOINT_COUNT];
 };
 
 static const std::map<k4abt_joint_id_t, string> joint_id_to_name

@@ -43,6 +43,7 @@ public:
 	//for tracker
 	vector<ofxKinect4AzureBody> bodies;
 	bool b_tracker_processing = false;
+	bool b_tracker_new = false;
 
 	//flag for 
 	bool is_frame_new = false;
@@ -133,6 +134,7 @@ public:
 	}
 
 	bool isFrameNew() { return is_frame_new; }
+	bool isTrackerNew() { return b_tracker_new; }
 
 	//set transform mode COLOR_TO_DEPTH or DEPTH_TO_COLOR or NONE
 	void setTransformType(OFX_K4A_TRANSFORM_TYPE _transform_type) { settings.transform_type = _transform_type; }
