@@ -23,6 +23,8 @@ void ofApp::update(){
 void ofApp::draw(){
 	
 	cam.begin();
+	ofPushMatrix();
+	ofScale(1, 1, -1);
 	ofEnableDepthTest();
 
 	auto& color_tex= k4a.getTexture();
@@ -34,6 +36,7 @@ void ofApp::draw(){
 	}
 
 	ofDisableDepthTest();
+	ofPopMatrix();
 	cam.end();
 	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }

@@ -113,6 +113,8 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 	cam.begin();
+	ofPushMatrix();
+	ofScale(1, 1, -1);
 	ofEnableDepthTest();
 	auto& tex = k4a.getTexture();
 	auto& pointcloud = k4a.getPointcloudVbo();
@@ -133,6 +135,7 @@ void ofApp::draw(){
 			a.drawAxes(100);
 		}
 	}
+	ofPopMatrix();
 	cam.end();
 	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
