@@ -72,6 +72,16 @@ class ofApp : public ofBaseApp{
 			ofColor::purple,
 			ofColor::pink,
 			ofColor::lime,
+			ofColor::crimson,
+			ofColor::red,
+			ofColor::blue,
+			ofColor::green,
+			ofColor::skyBlue,
+			ofColor::orange,
+			ofColor::yellow,
+			ofColor::purple,
+			ofColor::pink,
+			ofColor::lime,
 			ofColor::crimson
 		};
 };

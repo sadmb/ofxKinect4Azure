@@ -2,50 +2,46 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	auto serial_list = manager.getDeviceSerialList();
-	k4a.resize(serial_list.size());
 	ofxKinect4AzureSettings settings;
-	settings.make_pointcloud = true;
-	settings.transform_type = DEPTH_TO_COLOR;
-
-	for (int i = 0; i < serial_list.size(); i++) {
-		k4a[i] = shared_ptr<k4aThread>(new k4aThread());
-		manager.setupWithSerial(serial_list[i], k4a[i]->getK4aRef(),settings);
-		k4a[i]->startThread();
-	}
-
-	ofSetVerticalSync(false);
+	settings.enable_imu = true;
+	k4a.setup(settings);
+	ofSetVerticalSync(true);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	for (auto& k : k4a) {
-		k->updatePointcloud();
+	k4a.update();
+	auto& imus = k4a.popImuSampleQueue();
+	for (auto& value : imus) {
+		imu.push_back(value);
+	}
+	if (imu.size() > imu_buffer_size) {
+		int gap = imu.size() - imu_buffer_size;
+		imu.erase(imu.begin(), imu.begin()+gap);
 	}
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	cam.begin();
-	ofPushMatrix();
-	ofScale(1, -1, -1);
-	ofEnableDepthTest();
-	for (auto& k : k4a) {
-		auto& tex = k->getTexture();
-		auto& pointcloud = k->getPointcloud();
-		tex.bind();
-		pointcloud.draw(GL_POINTS, 0,pointcloud.getNumVertices());
-		tex.unbind();
+	if (imu.size()) {
+		ofPushMatrix();
+		ofTranslate(0, ofGetHeight() / 2);
+		uint64_t first = imu.back().acc.first;
+		for (int i = imu.size() - 1; i > 0; i--) {
+			ofSetColor(ofColor::red);
+			ofDrawLine((first - imu[i].acc.first) / 2000, imu[i].acc.second.x*10, (first - imu[i - 1].acc.first) / 2000, imu[i - 1].acc.second.x*10);
+			ofSetColor(ofColor::green);
+			ofDrawLine((first - imu[i].acc.first) / 2000, imu[i].acc.second.y * 10, (first - imu[i - 1].acc.first) / 2000, imu[i - 1].acc.second.y * 10);
+			ofSetColor(ofColor::blue);
+			ofDrawLine((first - imu[i].acc.first) / 2000, imu[i].acc.second.z * 10, (first - imu[i - 1].acc.first) / 2000, imu[i - 1].acc.second.z * 10);
+		}
+		ofPopMatrix();
 	}
-	ofDisableDepthTest();
-	ofPopMatrix();
-	cam.end();
-	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+	
 }
 
 //--------------------------------------------------------------

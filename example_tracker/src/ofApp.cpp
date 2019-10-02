@@ -134,6 +134,9 @@ void ofApp::draw(){
 			a.draw();
 			a.drawAxes(100);
 		}
+		ofSetColor(0);
+		ofDrawBitmapString(b[i].id, bones[i][K4ABT_JOINT_HEAD].getGlobalPosition());
+		ofSetColor(255);
 	}
 	ofPopMatrix();
 	cam.end();

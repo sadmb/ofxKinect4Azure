@@ -7,14 +7,12 @@
 
 class ofxKinect4Azure {
 
-public:
 	ofxKinect4AzureSettings settings;
 
 	//k4a handles
 	k4a_device_t device;
 	k4a_calibration_t calibration;
 	k4a_transformation_t transformation;
-	k4a_imu_sample_t imu;
 	//k4abt handles
 	k4abt_tracker_t tracker;
 	vector<k4abt_body_t> body;
@@ -51,8 +49,21 @@ public:
 	bool b_depth_tex_new = false;
 	bool b_ir_tex_new = false;
 
-	int device_index = -1;
+	string serial_num="";
+	int device_index = 0;
 	int device_count = 0;
+
+	//for imu
+	std::thread imu_recorder;
+	mutable std::mutex mutex;
+	vector<ofxKinect4AzureImuSample> imu_sample_queue[2];
+	std::atomic<bool> buffer_switch=false;
+	int imu_record_desire_step_usec = 0;
+	int imu_record_max_queue_size = 100;
+	std::atomic<bool> b_imu_recording = false;
+	std::atomic<bool> b_imu_poped = false;
+
+public:
 
 	ofxKinect4Azure()
 	{
@@ -133,6 +144,12 @@ public:
 		return ir;
 	}
 
+	vector<ofxKinect4AzureImuSample>& popImuSampleQueue(){
+		std::unique_lock<std::mutex> lck(mutex);
+		b_imu_poped = true;
+		return imu_sample_queue[buffer_switch];
+	}
+
 	bool isFrameNew() { return is_frame_new; }
 	bool isTrackerNew() { return b_tracker_new; }
 
@@ -143,10 +160,12 @@ public:
 	void enableIMU() {
 		k4a_device_start_imu(device);
 		settings.enable_imu = true;
+		startImuRecording();
 	}
 	void disableIMU() {
 		k4a_device_stop_imu(device);
 		settings.enable_imu = false;
+		b_imu_recording = false;
 	}
 
 	ofVec2f getDepthModeRange()
@@ -175,6 +194,53 @@ public:
 		}
 	}
 private:
+	void updateIMU() {
+		while (settings.enable_imu) {
+			auto start = ofGetElapsedTimeMicros();
+			if (b_imu_poped) {
+				buffer_switch = !buffer_switch;
+				imu_sample_queue[buffer_switch].clear();
+				b_imu_poped = false;
+			}
+			k4a_imu_sample_t imu;
+			if (k4a_device_get_imu_sample(device, &imu, 0) != K4A_RESULT_SUCCEEDED) {
+				continue;
+			}
+			ofxKinect4AzureImuSample imu_s;
+			imu_s.temperature = imu.temperature;
+			auto& acc = imu.acc_sample.xyz;
+			imu_s.acc.first = imu.acc_timestamp_usec; 
+			imu_s.acc.second.x = acc.x;
+			imu_s.acc.second.y = acc.y;
+			imu_s.acc.second.z = acc.z;
+			auto& gyro = imu.gyro_sample.xyz;
+			imu_s.gyro.first = imu.gyro_timestamp_usec;
+			imu_s.gyro.second.x = gyro.x;
+			imu_s.gyro.second.y = gyro.y;
+			imu_s.gyro.second.z = gyro.z;
+			mutex.lock();
+			imu_sample_queue[buffer_switch].push_back(imu_s);
+			if (imu_sample_queue[buffer_switch].size() > imu_record_max_queue_size) {
+				imu_sample_queue[buffer_switch].erase(imu_sample_queue[buffer_switch].begin());
+			}
+			mutex.unlock();
+
+			auto end = ofGetElapsedTimeMicros();
+			int sleep_usec = imu_record_desire_step_usec - (end - start);
+			if (sleep_usec>0) {
+				this_thread::sleep_for(std::chrono::microseconds(sleep_usec));
+			}
+		}
+	}
+	void startImuRecording() {
+		//start imu sampling
+		if (!b_imu_recording) {
+			imu_recorder = std::thread(std::bind(&ofxKinect4Azure::updateIMU, this));
+			imu_recorder.detach();
+		}
+		b_imu_recording = true;
+	}
+
 	ofVec2f getColorResolution() {
 		return getColorResolution(settings.color_resolution);
 	}

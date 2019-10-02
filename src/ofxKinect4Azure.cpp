@@ -3,14 +3,14 @@
 //--------------------------------------------------------------
 void ofxKinect4Azure::setup()
 {
-	setup(0);
+	setup(device_index);
 }
 
 //--------------------------------------------------------------
 void ofxKinect4Azure::setup(ofxKinect4AzureSettings _settings)
 {
 	settings = _settings;
-	setup(0, settings);
+	setup(device_index, settings);
 }
 
 void ofxKinect4Azure::setup(int index)
@@ -52,7 +52,7 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 			return;
 		}
 		if (settings.enable_imu) {
-			if (k4a_device_start_imu(device) != K4A_WAIT_RESULT_SUCCEEDED) {
+			if (k4a_device_start_imu(device) != K4A_RESULT_SUCCEEDED) {
 				ofLogError("ofxKinect4Azure") << "can't start IMU.";
 			}
 		}
@@ -61,7 +61,9 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 		transformation = k4a_transformation_create(&calibration);
 		if (settings.use_tracker) {
 			k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
-			k4abt_tracker_create(&calibration, tracker_config ,&tracker);
+			if (k4abt_tracker_create(&calibration, tracker_config, &tracker) != K4A_RESULT_SUCCEEDED) {
+				ofLogError("ofxKinect4Azure") << "Failed create tracker.";
+			}
 		}
 
 		switch (settings.transform_type) {
@@ -85,8 +87,12 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 		for (int i = 0; i < vertices_num; i++) {
 			pointcloud_uv[i] = glm::vec2(i%w, i / w);
 		}
+		if (settings.enable_imu) {
+			startImuRecording();
+		}
 
 		device_index = index;
+
 		ofLogNotice("ofxKinect4Azure") << "Finished opening Kinect4Azure device.";
 	}
 	else
@@ -113,6 +119,7 @@ void ofxKinect4Azure::saveCalibration(string filename)
 void ofxKinect4Azure::update() {
 	is_frame_new = false;
 	b_tracker_new = false;
+
 	k4a_capture_t capture = nullptr;
 	if (k4a_device_get_capture(device, &capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
 	{
@@ -124,12 +131,7 @@ void ofxKinect4Azure::update() {
 		b_depth_tex_new = false;
 		b_ir_tex_new = false;
 	}
-	if (settings.enable_imu) {
-		if (k4a_device_get_imu_sample(device, &imu, 0) != K4A_WAIT_RESULT_SUCCEEDED) {
-
-		}
-	}
-
+	
 	k4a_image_t color_image, depth_image,ir_image;
 	k4a_image_t	*c_ptr = nullptr, *d_ptr = nullptr, *ir_ptr = nullptr;
 

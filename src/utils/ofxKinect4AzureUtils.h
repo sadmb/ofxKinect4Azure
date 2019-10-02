@@ -9,6 +9,7 @@ enum OFX_K4A_TRANSFORM_TYPE {
 	DEPTH_TO_COLOR
 };
 
+//for skelton
 struct ofxKinect4AzureJoint {
 	glm::vec3 position;
 	glm::quat quaternion;
@@ -17,6 +18,13 @@ struct ofxKinect4AzureJoint {
 struct ofxKinect4AzureBody {
 	int id;
 	ofxKinect4AzureJoint joint[K4ABT_JOINT_COUNT];
+};
+
+//for imu
+struct ofxKinect4AzureImuSample {
+	float temperature=0;
+	pair<uint64_t,glm::vec3> acc;
+	pair<uint64_t, glm::vec3> gyro;
 };
 
 static const std::map<k4abt_joint_id_t, string> joint_id_to_name
