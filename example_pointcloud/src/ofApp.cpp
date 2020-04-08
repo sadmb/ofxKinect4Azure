@@ -2,36 +2,42 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	ofSetWindowTitle("ofxKinect4Azure example");
-	k4a.setup();
+	ofxKinect4AzureSettings settings;
+	settings.make_pointcloud = true;
+	settings.transform_type = DEPTH_TO_COLOR;
+	k4a.setup(settings);
+	cam.setVFlip(true);
 
-	//setup with settings
-	//
-	//ofxKinect4AzureSettings settings;
-	//settings.camera_fps = K4A_FRAMES_PER_SECOND_30;
-	//settings.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
-	//settings.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-	//settings.color_resolution = K4A_COLOR_RESOLUTION_720P;
-	//settings.synchronized_images_only = true;
-	//settings.make_pointcloud = false;
-	//settings.make_pointcloud = false;
-	//settings.enable_imu = false;
-	//settings.make_colorize_depth = false;
-	//settings.transform_type = NONE;
-	//settings.use_ir_image = false;
-	//settings.use_tracker = false;
-	//k4a.setup(settings);
+	ofSetVerticalSync(false);
+
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	k4a.update();
+	k4a.updatePointcloud();
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	k4a.draw(0, 0, 800, 450);
-	k4a.drawDepth(0, 460);
+	
+	cam.begin();
+	ofPushMatrix();
+	ofScale(1, 1, -1);
+	ofEnableDepthTest();
+
+	auto& color_tex= k4a.getTexture();
+	auto& pointcloud = k4a.getPointcloudVbo();
+	if (color_tex.isAllocated()) {
+		color_tex.bind();
+		pointcloud.draw(GL_POINTS, 0, pointcloud.getNumVertices());
+		color_tex.unbind();
+	}
+
+	ofDisableDepthTest();
+	ofPopMatrix();
+	cam.end();
+	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
 
 //--------------------------------------------------------------

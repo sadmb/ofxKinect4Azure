@@ -1,2 +1,13 @@
 example/bin/example_debug.lib
 example/bin/example.lib
+example/bin/
+*.sln
+*.vcxproj
+*.filters
+*.rc
+example_align_color_and_depth/bin/
+example_imu/bin/
+example_multi_connect/bin/
+example_pointcloud/bin/
+example_tracker/bin/
+libs/amd64/release/bin/dnn_model_2_0.onnx

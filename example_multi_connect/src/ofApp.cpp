@@ -2,36 +2,45 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	ofSetWindowTitle("ofxKinect4Azure example");
-	k4a.setup();
+	auto serial_list = manager.getDeviceSerialList();
+	k4a.resize(serial_list.size());
+	ofxKinect4AzureSettings settings;
+	settings.make_pointcloud = true;
+	settings.transform_type = DEPTH_TO_COLOR;
 
-	//setup with settings
-	//
-	//ofxKinect4AzureSettings settings;
-	//settings.camera_fps = K4A_FRAMES_PER_SECOND_30;
-	//settings.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
-	//settings.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-	//settings.color_resolution = K4A_COLOR_RESOLUTION_720P;
-	//settings.synchronized_images_only = true;
-	//settings.make_pointcloud = false;
-	//settings.make_pointcloud = false;
-	//settings.enable_imu = false;
-	//settings.make_colorize_depth = false;
-	//settings.transform_type = NONE;
-	//settings.use_ir_image = false;
-	//settings.use_tracker = false;
-	//k4a.setup(settings);
+	for (int i = 0; i < serial_list.size(); i++) {
+		k4a[i] = ofPtr<k4aThread>(new k4aThread);
+		k4a[i]->getK4a() = manager.setupWithSerial(serial_list[i],settings);
+		k4a[i]->startThread();
+	}
+
+	ofSetVerticalSync(false);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	k4a.update();
+	for (auto& k : k4a) {
+		k->updatePointcloud();
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	k4a.draw(0, 0, 800, 450);
-	k4a.drawDepth(0, 460);
+	cam.begin();
+	ofPushMatrix();
+	ofScale(1, -1, -1);
+	ofEnableDepthTest();
+	for (auto& k : k4a) {
+		auto& tex = k->getTexture();
+		auto& pointcloud = k->getPointcloud();
+		tex.bind();
+		pointcloud.draw(GL_POINTS, 0,pointcloud.getNumVertices());
+		tex.unbind();
+	}
+	ofDisableDepthTest();
+	ofPopMatrix();
+	cam.end();
+	ofDrawBitmapString(ofGetFrameRate(), 10, 10);
 }
 
 //--------------------------------------------------------------

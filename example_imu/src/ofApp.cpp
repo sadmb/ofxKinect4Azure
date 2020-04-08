@@ -2,41 +2,46 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	ofSetWindowTitle("ofxKinect4Azure example");
-	k4a.setup();
-
-	//setup with settings
-	//
-	//ofxKinect4AzureSettings settings;
-	//settings.camera_fps = K4A_FRAMES_PER_SECOND_30;
-	//settings.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
-	//settings.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-	//settings.color_resolution = K4A_COLOR_RESOLUTION_720P;
-	//settings.synchronized_images_only = true;
-	//settings.make_pointcloud = false;
-	//settings.make_pointcloud = false;
-	//settings.enable_imu = false;
-	//settings.make_colorize_depth = false;
-	//settings.transform_type = NONE;
-	//settings.use_ir_image = false;
-	//settings.use_tracker = false;
-	//k4a.setup(settings);
+	ofxKinect4AzureSettings settings;
+	settings.enable_imu = true;
+	k4a.setup(settings);
+	ofSetVerticalSync(true);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	k4a.update();
+	auto& imus = k4a.popImuSampleQueue();
+	for (auto& value : imus) {
+		imu.push_back(value);
+	}
+	if (imu.size() > imu_buffer_size) {
+		int gap = imu.size() - imu_buffer_size;
+		imu.erase(imu.begin(), imu.begin()+gap);
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	k4a.draw(0, 0, 800, 450);
-	k4a.drawDepth(0, 460);
+	if (imu.size()) {
+		ofPushMatrix();
+		ofTranslate(0, ofGetHeight() / 2);
+		uint64_t first = imu.back().acc.first;
+		for (int i = imu.size() - 1; i > 0; i--) {
+			ofSetColor(ofColor::red);
+			ofDrawLine((first - imu[i].acc.first) / 2000, imu[i].acc.second.x*10, (first - imu[i - 1].acc.first) / 2000, imu[i - 1].acc.second.x*10);
+			ofSetColor(ofColor::green);
+			ofDrawLine((first - imu[i].acc.first) / 2000, imu[i].acc.second.y * 10, (first - imu[i - 1].acc.first) / 2000, imu[i - 1].acc.second.y * 10);
+			ofSetColor(ofColor::blue);
+			ofDrawLine((first - imu[i].acc.first) / 2000, imu[i].acc.second.z * 10, (first - imu[i - 1].acc.first) / 2000, imu[i - 1].acc.second.z * 10);
+		}
+		ofPopMatrix();
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+	
 }
 
 //--------------------------------------------------------------

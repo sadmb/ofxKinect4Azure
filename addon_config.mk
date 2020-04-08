@@ -19,7 +19,7 @@ meta:
 	ADDON_DESCRIPTION = Addon for Azure Kinect DK
 	ADDON_AUTHOR = sadmb
 	ADDON_TAGS = "Kinect" "Azure" "computre vision"
-	ADDON_URL = 
+	ADDON_URL = https://github.com/sadmb/ofxKinect4Azure/
 
 common:
 	# dependencies with other addons, a list of them separated by spaces
@@ -64,7 +64,21 @@ common:
 	# a specific platform
 	# ADDON_LIBS_EXCLUDE =
 
+vs:
 	ADDON_LIBS =
 	ADDON_LIBS += libs/amd64/release/lib/k4a.lib
 	ADDON_LIBS += libs/amd64/release/lib/k4abt.lib
 	ADDON_LIBS += libs/amd64/release/lib/k4arecord.lib
+
+	ADDON_DLLS_TO_COPY =
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4a.pdb
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4a.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4arecord.pdb
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4arecord.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/depth_engine_2_0.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4abt.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/dnn_model_2_0.onnx
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/onnxruntime.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/cudnn64_7.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/cublas64_100.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/cudart64_100.dll
