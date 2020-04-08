@@ -21,7 +21,7 @@ protected:
 
 	glm::vec2 color_size, depth_size;
 
-	//pixels
+	// pixels
 	ofPixels pix;
 	ofShortPixels depth_pix;
 	ofPixels colorized_depth_pix;
@@ -100,7 +100,6 @@ public:
 		}
 		device.close();
 	};
-
 
 	void setup();
 	void setup(ofxKinect4AzureSettings settings);
@@ -314,7 +313,7 @@ public:
 
 		// Default to opaque black.
 		//
-		ofColor result = ofColor( 0, 0, 0, PixelMax );
+		ofColor result = ofColor(0, 0, 0, PixelMax);
 
 		// If the pixel is actual zero and not just below the min value, make it black
 		//

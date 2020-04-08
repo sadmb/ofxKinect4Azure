@@ -30,6 +30,7 @@ common:
 	# but if the addon or addon libraries need special search paths they can be
 	# specified here separated by spaces or one per line using +=
 	ADDON_INCLUDES = src
+	ADDON_INCLUDES += src/utils
 	ADDON_INCLUDES += libs/include
 	ADDON_INCLUDES += libs/include/k4a
 	ADDON_INCLUDES += libs/include/k4abt

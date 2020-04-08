@@ -9,7 +9,6 @@ class ofApp : public ofBaseApp{
 public:
 	ofxKinect4AzureManager manager;
 	vector<ofPtr<k4aThread>> k4a;
-
 	ofEasyCam cam;
 
 	void setup();
@@ -27,5 +26,4 @@ public:
 	void windowResized(int w, int h);
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
-		
 };

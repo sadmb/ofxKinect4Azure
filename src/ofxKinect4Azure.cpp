@@ -3,15 +3,17 @@
 //--------------------------------------------------------------
 void ofxKinect4Azure::setup()
 {
-	setup(0);
+	setup(device_index);
 }
 
 //--------------------------------------------------------------
-void ofxKinect4Azure::setup(ofxKinect4AzureSettings settings)
+void ofxKinect4Azure::setup(ofxKinect4AzureSettings _settings)
 {
-	setup(0, settings);
+	settings = _settings;
+	setup(device_index, settings);
 }
 
+//--------------------------------------------------------------
 void ofxKinect4Azure::setup(int index)
 {
 	device_count = k4a::device::get_installed_count();
@@ -25,12 +27,17 @@ void ofxKinect4Azure::setup(int index)
 
 
 //--------------------------------------------------------------
-void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
+void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 {
+	settings = _settings;
 	device_count = k4a::device::get_installed_count();
 	if (device_count == 0)
 	{
 		ofLogError("ofxKinect4Azure") << "No Azure Kinect devices detected.";
+		return;
+	}
+	else {
+		ofLogNotice("ofxKinect4Azure") << ofToString(device_count) + " Azure Kinect devices detected.";
 	}
 	if (device_count > index)
 	{
@@ -72,7 +79,6 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
 
 		device_index = index;
 		ofLogNotice("ofxKinect4Azure") << "Finished opening Kinect4Azure device.";
-
 	}
 	else
 	{
@@ -82,6 +88,7 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings settings)
 
 }
 
+//--------------------------------------------------------------
 void ofxKinect4Azure::setupPointcloud()
 {
 	settings.make_pointcloud = true;
@@ -94,6 +101,7 @@ void ofxKinect4Azure::setupPointcloud()
 	}
 }
 
+//--------------------------------------------------------------
 void ofxKinect4Azure::saveCalibration(string filename)
 {
 	vector<uint8_t> calibration_buffer = device.get_raw_calibration();
@@ -289,9 +297,14 @@ void ofxKinect4Azure::updatePointcloud()
 //--------------------------------------------------------------
 void ofxKinect4Azure::draw(float x, float y, float w, float h)
 {
-	if (device_index >= 0)
+	if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
 	{
-		if (settings.color_resolution != K4A_COLOR_RESOLUTION_OFF)
+		if (!b_tex_new) {
+			color.allocate(pix);
+			b_tex_new = true;
+		}
+		ofVec2f resolution = getColorResolution(settings.color_resolution);
+		if (color.isAllocated())
 		{
 			if (b_color_new)
 			{
@@ -316,10 +329,15 @@ void ofxKinect4Azure::draw(float x, float y, float w, float h)
 					ofPopStyle();
 				}
 			}
+			ofPushStyle();
+			ofSetColor(255);
+			color.draw(x, y, w, h);
+			ofPopStyle();
 		}
 	}
 }
 
+//--------------------------------------------------------------
 void ofxKinect4Azure::drawDepth(float x, float y, float w, float h)
 {
 	if (device_index >= 0)
@@ -328,8 +346,7 @@ void ofxKinect4Azure::drawDepth(float x, float y, float w, float h)
 		{
 			if (b_depth_new)
 			{
-				if (!b_depth_tex_new)
-				{
+				if (!b_depth_tex_new) {
 					depth.allocate(depth_pix);
 					b_depth_tex_new = true;
 				}
@@ -353,6 +370,7 @@ void ofxKinect4Azure::drawDepth(float x, float y, float w, float h)
 	}
 }
 
+//--------------------------------------------------------------
 void ofxKinect4Azure::drawColorizedDepth(float x, float y, float w, float h)
 {
 	if (device_index >= 0)
@@ -381,10 +399,15 @@ void ofxKinect4Azure::drawColorizedDepth(float x, float y, float w, float h)
 					ofPopStyle();
 				}
 			}
+			ofPushStyle();
+			ofSetColor(255);
+			colorized_depth.draw(x, y, w, h);
+			ofPopStyle();
 		}
 	}
 }
 
+//--------------------------------------------------------------
 void ofxKinect4Azure::drawIR(float x, float y, float w, float h)
 {
 	if (device_index >= 0)
