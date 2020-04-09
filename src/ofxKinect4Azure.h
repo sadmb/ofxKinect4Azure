@@ -14,7 +14,6 @@ protected:
 	// k4a interfaces
 	k4a::device device;
 	k4a::calibration calibration;
-	k4a::transformation transformation;
 
 	// k4abt interfaces
 	k4abt::tracker tracker;
@@ -207,11 +206,6 @@ public:
 	ofxKinect4AzureBodySettings& getBodySettings()
 	{
 		return body_settings;
-	}
-
-	k4a::transformation& getTransformation()
-	{
-		return transformation;
 	}
 
 	k4a::calibration& getCalibration()
@@ -459,15 +453,13 @@ public:
 		}
 	}
 
-	ofxKinect4Azure& setupWithSerial(string _serial_num, ofxKinect4AzureSettings _settings = ofxKinect4AzureSettings()) {
-		ofxKinect4Azure k4a;
+	void setupWithSerial(string _serial_num, ofxKinect4Azure* k4a, ofxKinect4AzureSettings _settings = ofxKinect4AzureSettings()) {
 		if (serial_to_id.find(_serial_num) != serial_to_id.end()) {
-			k4a.setup(serial_to_id[_serial_num], _settings);
+			k4a->setup(serial_to_id[_serial_num], _settings);
 		}
 		else {
 			ofLogError("ofxKinect4Azure") << "NO device found matching serial number: " << _serial_num;
 		}
-		return k4a;
 	}
 
 	int getDeviceNum() {

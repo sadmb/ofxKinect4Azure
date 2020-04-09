@@ -126,6 +126,7 @@ void ofxKinect4Azure::update(){
 //			ofLogError("ofxKinct4Azure") << "capture failed.";
 			return;
 		}
+		k4a::transformation transformation(calibration);
 		k4a::image color_image;
 		k4a::image depth_image;
 		k4a::image ir_image;
@@ -135,9 +136,7 @@ void ofxKinect4Azure::update(){
 			depth_size = glm::vec2(depth_image.get_width_pixels(), depth_image.get_height_pixels());
 			if (settings.transform_type == DEPTH_TO_COLOR)
 			{
-				k4a::image transformed_depth_image;
-				transformed_depth_image = k4a::image::create(K4A_IMAGE_FORMAT_DEPTH16, depth_size.x, depth_size.y, depth_size.x * sizeof(unsigned short));
-				transformed_depth_image = transformation.depth_image_to_color_camera(depth_image);
+				k4a::image transformed_depth_image = transformation.depth_image_to_color_camera(depth_image);
 				depth_image = transformed_depth_image;
 			}
 
@@ -174,7 +173,7 @@ void ofxKinect4Azure::update(){
 				{
 					setupPointcloud();
 				}
-				k4a::image pointcloud_image = k4a::image::create(K4A_IMAGE_FORMAT_DEPTH16, depth_size.x, depth_size.y, depth_size.x * sizeof(short) * 3);
+				k4a::image pointcloud_image;
 				if (settings.transform_type == DEPTH_TO_COLOR) {
 					pointcloud_image = transformation.depth_image_to_point_cloud(depth_image, K4A_CALIBRATION_TYPE_COLOR);
 				}
@@ -330,10 +329,6 @@ void ofxKinect4Azure::draw(float x, float y, float w, float h)
 					ofPopStyle();
 				}
 			}
-			ofPushStyle();
-			ofSetColor(255);
-			color.draw(x, y, w, h);
-			ofPopStyle();
 		}
 	}
 }
@@ -400,10 +395,6 @@ void ofxKinect4Azure::drawColorizedDepth(float x, float y, float w, float h)
 					ofPopStyle();
 				}
 			}
-			ofPushStyle();
-			ofSetColor(255);
-			colorized_depth.draw(x, y, w, h);
-			ofPopStyle();
 		}
 	}
 }

@@ -17,8 +17,8 @@ public:
 		waitForThread();
 	};
 
-	ofxKinect4Azure getK4a() {
-		return k4a;
+	ofxKinect4Azure* getK4aRef() {
+		return &k4a;
 	}
 
 	void threadedFunction() {

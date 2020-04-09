@@ -10,7 +10,7 @@ void ofApp::setup(){
 
 	for (int i = 0; i < serial_list.size(); i++) {
 		k4a[i] = ofPtr<k4aThread>(new k4aThread);
-		k4a[i]->getK4a() = manager.setupWithSerial(serial_list[i],settings);
+		manager.setupWithSerial(serial_list[i], k4a[i]->getK4aRef(), settings);
 		k4a[i]->startThread();
 	}
 
