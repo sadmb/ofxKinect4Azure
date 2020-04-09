@@ -3,14 +3,14 @@
 //--------------------------------------------------------------
 void ofxKinect4Azure::setup()
 {
-	setup(device_index);
+	setup(0);
 }
 
 //--------------------------------------------------------------
 void ofxKinect4Azure::setup(ofxKinect4AzureSettings _settings)
 {
 	settings = _settings;
-	setup(device_index, settings);
+	setup(0, settings);
 }
 
 //--------------------------------------------------------------
@@ -39,7 +39,7 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 	else {
 		ofLogNotice("ofxKinect4Azure") << ofToString(device_count) + " Azure Kinect devices detected.";
 	}
-	if (device_count > index)
+	if (index >= 0 && device_count > index)
 	{
 		ofLogNotice("ofxKinect4Azure") << "Started opening Kinect4Azure device...";
 		device = k4a::device::open(index);
@@ -121,7 +121,7 @@ void ofxKinect4Azure::update(){
 	if (device_index >= 0)
 	{
 		k4a::capture capture = nullptr;
-		if (device.get_capture(&capture))
+		if (!device.get_capture(&capture))
 		{
 //			ofLogError("ofxKinct4Azure") << "capture failed.";
 			return;
@@ -166,6 +166,7 @@ void ofxKinect4Azure::update(){
 					}
 				}
 				b_colorized_depth_new = true;
+				b_colorized_depth_tex_new = false;
 			}
 
 			if (settings.make_pointcloud) {

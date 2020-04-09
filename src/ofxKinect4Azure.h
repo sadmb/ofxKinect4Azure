@@ -450,8 +450,7 @@ public:
 
 		device_count = k4a::device::get_installed_count();
 		for (int i = 0; i < device_count; i++) {
-			k4a::device d;
-			d.open(i);
+			k4a::device d = k4a::device::open(i);
 			std::string serialnum = d.get_serialnum();
 			serial_to_id.emplace(serialnum, i);
 			serial_list.push_back(serialnum);

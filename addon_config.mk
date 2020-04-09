@@ -76,7 +76,7 @@ vs:
 	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4a.dll
 	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4arecord.pdb
 	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4arecord.dll
-	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/depth_engine_2_0.dll
+	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/depthengine_2_0.dll
 	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/k4abt.dll
 	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/dnn_model_2_0.onnx
 	ADDON_DLLS_TO_COPY += libs/amd64/release/bin/onnxruntime.dll
