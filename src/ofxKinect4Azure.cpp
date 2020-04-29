@@ -49,6 +49,8 @@ void ofxKinect4Azure::setup(int index, ofxKinect4AzureSettings _settings)
 			device.start_imu();
 		}
 		calibration = device.get_calibration(settings.depth_mode, settings.color_resolution);
+		transformation = k4a::transformation(calibration);
+
 		if (settings.use_tracker)
 		{
 			tracker = k4abt::tracker::create(calibration, body_settings);
@@ -126,7 +128,6 @@ void ofxKinect4Azure::update(){
 //			ofLogError("ofxKinct4Azure") << "capture failed.";
 			return;
 		}
-		k4a::transformation transformation(calibration);
 		k4a::image color_image;
 		k4a::image depth_image;
 		k4a::image ir_image;
@@ -180,7 +181,7 @@ void ofxKinect4Azure::update(){
 				else {
 					pointcloud_image = transformation.depth_image_to_point_cloud(depth_image, K4A_CALIBRATION_TYPE_DEPTH);
 				}
-				uint8_t* p_buffer = pointcloud_image.get_buffer();
+				short* p_buffer = (short*)pointcloud_image.get_buffer();
 				auto p_data = pointcloud_vert.data();
 
 				for (int i = 0; i < NUM_VERTICES; i++) {

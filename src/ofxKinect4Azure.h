@@ -14,6 +14,7 @@ protected:
 	// k4a interfaces
 	k4a::device device;
 	k4a::calibration calibration;
+	k4a::transformation transformation;
 
 	// k4abt interfaces
 	k4abt::tracker tracker;
