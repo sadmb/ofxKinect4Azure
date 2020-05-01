@@ -38,6 +38,7 @@ protected:
 	int NUM_VERTICES = 0;
 	vector<glm::vec3> pointcloud_vert;
 	vector<glm::vec2> pointcloud_uv;
+	vector<ofFloatColor> pointcloud_color;
 
 	// for tracker
 	vector<ofxKinect4AzureBody> bodies;
